@@ -1,0 +1,39 @@
+{
+  "name": "@cleverforge/payload-eventbrite",
+  "version": "0.1.0-beta.0",
+  "description": "Standalone Payload CMS plugin for Eventbrite event synchronization and webhooks.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "keywords": ["payload", "payloadcms", "payload-plugin", "eventbrite", "events", "webhooks", "calendar"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cleverforge/payload-eventbrite.git"
+  },
+  "bugs": {"url": "https://github.com/cleverforge/payload-eventbrite/issues"},
+  "homepage": "https://github.com/cleverforge/payload-eventbrite#readme",
+  "peerDependencies": {
+    "payload": ">=3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "payload": "^3.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {"node": ">=20.9.0"}
+}
