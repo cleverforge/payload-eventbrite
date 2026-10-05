@@ -109,7 +109,7 @@ test('Core boots and synchronizes Eventbrite events idempotently in a real Paylo
     assert.equal(first.title, 'Remote Event v1')
     assert.equal(first.syncStatus, 'synced')
     assert.equal(first.raw, null)
-    const linkedVenueId = typeof first.venue === 'object' ? first.venue?.id : first.venue
+    const linkedVenueId = typeof first.venueRecord === 'object' ? first.venueRecord?.id : first.venueRecord
     assert.equal(Number(linkedVenueId), Number(venue.id))
 
     const second: any = await upsertEvent(payload, {
