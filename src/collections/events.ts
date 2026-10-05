@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
-import { publicDataAccess } from '../lib/access.js'
+import { eventDataAccess } from '../lib/access.js'
 
 const serverManaged = {
   create: () => false,
@@ -8,7 +8,7 @@ const serverManaged = {
 }
 
 export const buildEventsCollection = (options: EventbritePluginOptions): CollectionConfig => ({
-  access: publicDataAccess(options),
+  access: eventDataAccess(options),
   slug: options.eventsSlug || 'eventbrite-events',
   admin: {
     useAsTitle: 'title',
