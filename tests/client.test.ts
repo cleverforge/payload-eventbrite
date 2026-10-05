@@ -58,3 +58,30 @@ test('rejects invalid reliability configuration', () => {
   assert.throws(() => new EventbriteClient('token', { retries: 6 }), /integer between 0 and 5/)
   assert.throws(() => new EventbriteClient('token', { timeoutMs: 99 }), /integer between 1000 and 120000/)
 })
+
+
+test('deletes an Eventbrite webhook with one authenticated DELETE request', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls++
+    const url = new URL(String(input))
+    const headers = new Headers(init?.headers)
+    assert.equal(url.pathname, '/v3/webhooks/webhook-1/')
+    assert.equal(init?.method, 'DELETE')
+    assert.equal(headers.get('Authorization'), 'Bearer test-token')
+    return new Response(JSON.stringify({ deleted: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const client = new EventbriteClient('test-token')
+    const result = await client.deleteWebhook('webhook-1')
+    assert.equal(result?.deleted, true)
+    assert.equal(calls, 1)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
