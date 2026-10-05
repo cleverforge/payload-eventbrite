@@ -32,6 +32,7 @@ export function toEventbriteCreatePayload(doc: Record<string, any>, defaults: { 
     event: {
       name: { html: String(doc.title || '') },
       summary: doc.summary || undefined,
+      description: doc.descriptionHTML ? { html: String(doc.descriptionHTML) } : undefined,
       start: toEventbriteDate(doc.startAt, timezone),
       end: toEventbriteDate(doc.endAt, timezone),
       currency: doc.currency || defaults.currency,
@@ -39,6 +40,8 @@ export function toEventbriteCreatePayload(doc: Record<string, any>, defaults: { 
       listed: doc.listed !== false,
       shareable: true,
       capacity: typeof doc.capacity === 'number' ? doc.capacity : undefined,
+      venue_id: doc.onlineEvent ? undefined : doc.venueId || undefined,
+      organizer_id: doc.organizerId || undefined,
     },
   }
 }
@@ -49,13 +52,36 @@ export function toEventbriteUpdatePayload(doc: Record<string, any>, defaults: { 
     event: {
       name: { html: String(doc.title || '') },
       summary: doc.summary || undefined,
+      description: doc.descriptionHTML ? { html: String(doc.descriptionHTML) } : undefined,
       start: doc.startAt ? toEventbriteDate(doc.startAt, timezone) : undefined,
       end: doc.endAt ? toEventbriteDate(doc.endAt, timezone) : undefined,
       online_event: typeof doc.onlineEvent === 'boolean' ? doc.onlineEvent : undefined,
       listed: typeof doc.listed === 'boolean' ? doc.listed : undefined,
       capacity: typeof doc.capacity === 'number' ? doc.capacity : undefined,
+      venue_id: doc.onlineEvent ? undefined : doc.venueId || undefined,
+      organizer_id: doc.organizerId || undefined,
     },
   }
+}
+
+export function toBasicTicketClassPayload(doc: Record<string, any>, currency: string) {
+  const quantity = Number(doc.basicTicketQuantity || doc.capacity || 1)
+  if (!Number.isInteger(quantity) || quantity < 1) throw new Error('Basic ticket quantity must be a positive integer')
+
+  const ticket: Record<string, unknown> = {
+    name: String(doc.basicTicketName || 'General Admission'),
+    quantity_total: quantity,
+  }
+
+  if (doc.basicTicketFree !== false) {
+    ticket.free = true
+  } else {
+    const minor = Number(doc.basicTicketPriceMinor)
+    if (!Number.isInteger(minor) || minor < 1) throw new Error('Paid basic tickets require basicTicketPriceMinor in minor currency units')
+    ticket.cost = `${doc.currency || currency},${minor}`
+  }
+
+  return { ticket_class: ticket }
 }
 
 function toEventbriteDate(value: string, timezone: string) {
