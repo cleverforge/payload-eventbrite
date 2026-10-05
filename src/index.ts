@@ -16,6 +16,7 @@ export * from './lib/normalize.js'
 export * from './lib/oauth.js'
 export * from './lib/tickets.js'
 export * from './lib/upsert.js'
+export * from './lib/webhook.js'
 
 export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
   const opts: EventbritePluginOptions = {
