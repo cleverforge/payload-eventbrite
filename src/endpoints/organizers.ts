@@ -1,6 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
-import { getClient, getOrganizationId, json, requireUser } from './helpers.js'
+import { errorResponse, getClient, getOrganizationId, json, requireManagement } from './helpers.js'
 import { normalizeOrganizer, toOrganizerCreatePayload, upsertOrganizer } from '../lib/organizers.js'
 
 export const buildOrganizerSyncEndpoint = (options: EventbritePluginOptions): Endpoint => ({
@@ -8,7 +8,7 @@ export const buildOrganizerSyncEndpoint = (options: EventbritePluginOptions): En
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const context = { operation: 'organizer-sync' as const }
       const [client, organizationId] = await Promise.all([
         getClient(options, req, context),
@@ -28,7 +28,7 @@ export const buildOrganizerSyncEndpoint = (options: EventbritePluginOptions): En
 
       return json({ ok: true, organizationId, imported })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })
@@ -38,7 +38,7 @@ export const buildOrganizerPushEndpoint = (options: EventbritePluginOptions): En
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const slug = options.organizersSlug || 'eventbrite-organizers'
       const id = req.routeParams?.id as string
       const doc: any = await req.payload.findByID({ collection: slug as any, id, req })
@@ -68,7 +68,7 @@ export const buildOrganizerPushEndpoint = (options: EventbritePluginOptions): En
 
       return json({ ok: true, organizer: updated })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })
