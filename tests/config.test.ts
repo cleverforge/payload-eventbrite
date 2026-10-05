@@ -80,6 +80,7 @@ test('Eventbrite-owned fields are server-managed through field access', async ()
     'lastSyncError',
     'eventbriteChangedAt',
     'eventbritePublishedAt',
+    'renderedDescriptionHTML',
   ]) {
     const field = events.fields.find((item: any) => item?.name === name)
     assert.ok(field, `Expected field ${name}`)
