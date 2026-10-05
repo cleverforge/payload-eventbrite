@@ -12,20 +12,35 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "pack:check": "npm run build && npm pack --dry-run",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "prepare": "npm run build"
   },
-  "keywords": ["payload", "payloadcms", "payload-plugin", "eventbrite", "events", "webhooks", "calendar"],
+  "keywords": [
+    "payload",
+    "payloadcms",
+    "payload-plugin",
+    "eventbrite",
+    "events",
+    "webhooks",
+    "calendar"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/cleverforge/payload-eventbrite.git"
   },
-  "bugs": {"url": "https://github.com/cleverforge/payload-eventbrite/issues"},
+  "bugs": {
+    "url": "https://github.com/cleverforge/payload-eventbrite/issues"
+  },
   "homepage": "https://github.com/cleverforge/payload-eventbrite#readme",
   "peerDependencies": {
     "payload": ">=3.0.0"
@@ -36,5 +51,7 @@
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   },
-  "engines": {"node": ">=20.9.0"}
+  "engines": {
+    "node": ">=20.9.0"
+  }
 }
