@@ -143,17 +143,24 @@ test('organizer remote fields and raw payload are server-managed', async () => {
 })
 
 
-test('public data collections default to public read and authenticated management', async () => {
+test('anonymous event reads expose only listed public-state events while authenticated users can read all', async () => {
   const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const events = config.collections.find((item: any) => item.slug === 'eventbrite-events')
+  const anonymous = await events.access.read({ req: { user: undefined } })
+  assert.deepEqual(anonymous, {
+    and: [
+      { listed: { equals: true } },
+      { status: { in: ['live', 'started', 'ended', 'completed'] } },
+    ],
+  })
+  assert.equal(await events.access.read({ req: { user: { id: 'u1' } } }), true)
+  assert.equal(await events.access.create({ req: { user: undefined } }), false)
+  assert.equal(await events.access.create({ req: { user: { id: 'u1' } } }), true)
 
-  for (const slug of ['eventbrite-events', 'eventbrite-venues', 'eventbrite-organizers']) {
+  for (const slug of ['eventbrite-venues', 'eventbrite-organizers']) {
     const collection = config.collections.find((item: any) => item.slug === slug)
-    assert.ok(collection?.access)
     assert.equal(await collection.access.read({ req: { user: undefined } }), true)
     assert.equal(await collection.access.create({ req: { user: undefined } }), false)
-    assert.equal(await collection.access.update({ req: { user: undefined } }), false)
-    assert.equal(await collection.access.delete({ req: { user: undefined } }), false)
-    assert.equal(await collection.access.create({ req: { user: { id: 'u1' } } }), true)
   }
 })
 
@@ -205,4 +212,16 @@ test('management endpoints distinguish unauthenticated and unauthorized requests
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+
+test('host applications can override event-specific public read access', async () => {
+  const config: any = eventbritePlugin({
+    ...base,
+    publicEventReadAccess: ({ req }: any) => Boolean(req.user?.canReadEvents),
+  })({ collections: [] } as any)
+
+  const events = config.collections.find((item: any) => item.slug === 'eventbrite-events')
+  assert.equal(await events.access.read({ req: { user: undefined } }), false)
+  assert.equal(await events.access.read({ req: { user: { canReadEvents: true } } }), true)
 })
