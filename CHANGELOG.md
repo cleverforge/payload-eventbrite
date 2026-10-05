@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add first-class Eventbrite organizer synchronization, creation, and Payload event-to-organizer relationships while retaining direct organizerId compatibility.
+- Expand the read-only live Eventbrite smoke test to venues and organizers.
+- Keep manual event push raw Eventbrite response storage opt-in, matching the documented data-minimization default.
+
 - Add first-class Eventbrite venue sync/create/update and Payload event-to-venue relationships while retaining direct venueId compatibility.
 
 - Add authenticated Eventbrite webhook deletion for clean disable/uninstall workflows.
