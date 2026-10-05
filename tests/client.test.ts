@@ -80,3 +80,39 @@ test('deletes an Eventbrite webhook with one authenticated DELETE request', asyn
     globalThis.fetch = originalFetch
   }
 })
+
+
+test('lists organizers using the organization-scoped Eventbrite endpoint', async () => {
+  const originalFetch = globalThis.fetch
+  let requested = ''
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    requested = String(input)
+    assert.equal(String(init?.method || 'GET').toUpperCase(), 'GET')
+    return Response.json({ organizers: [{ id: 'organizer-1', name: 'Community Team' }] })
+  }) as typeof fetch
+  try {
+    const result = await new EventbriteClient('token').listOrganizationOrganizers('organization-1')
+    assert.match(requested, /\/v3\/organizations\/organization-1\/organizers\//)
+    assert.equal(result.organizers?.[0]?.id, 'organizer-1')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('creates organizers with one organization-scoped POST request', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls++
+    assert.match(String(input), /\/v3\/organizations\/organization-1\/organizers\//)
+    assert.equal(init?.method, 'POST')
+    return Response.json({ id: 'organizer-2', name: 'New Team' })
+  }) as typeof fetch
+  try {
+    const result = await new EventbriteClient('token').createOrganizer('organization-1', { organizer: { name: 'New Team' } })
+    assert.equal(result.id, 'organizer-2')
+    assert.equal(calls, 1)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
