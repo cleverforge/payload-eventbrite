@@ -1,6 +1,11 @@
 import type { CollectionConfig } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
 
+const serverManaged = {
+  create: () => false,
+  update: () => false,
+}
+
 export const buildEventsCollection = (options: EventbritePluginOptions): CollectionConfig => ({
   slug: options.eventsSlug || 'eventbrite-events',
   admin: {
@@ -31,15 +36,15 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
         { name: 'basicTicketQuantity', type: 'number', min: 1 },
         { name: 'basicTicketFree', type: 'checkbox', defaultValue: true },
         { name: 'basicTicketPriceMinor', type: 'number', min: 1, admin: { description: 'Paid tickets only. Minor units: 1000 = $10.00 USD.' } },
-        { name: 'ticketClassId', type: 'text', admin: { readOnly: true } },
+        { name: 'ticketClassId', type: 'text', access: serverManaged, admin: { readOnly: true } },
       ],
     },
-    { name: 'eventbriteId', type: 'text', unique: true, index: true, admin: { position: 'sidebar', readOnly: true } },
-    { name: 'eventbriteURL', type: 'text', admin: { position: 'sidebar', readOnly: true } },
-    { name: 'status', type: 'text', admin: { position: 'sidebar', readOnly: true } },
-    { name: 'imageURL', type: 'text', admin: { readOnly: true } },
-    { name: 'eventbriteChangedAt', type: 'date', admin: { readOnly: true } },
-    { name: 'eventbritePublishedAt', type: 'date', admin: { readOnly: true } },
+    { name: 'eventbriteId', type: 'text', unique: true, index: true, access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'eventbriteURL', type: 'text', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'status', type: 'text', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'imageURL', type: 'text', access: serverManaged, admin: { readOnly: true } },
+    { name: 'eventbriteChangedAt', type: 'date', access: serverManaged, admin: { readOnly: true } },
+    { name: 'eventbritePublishedAt', type: 'date', access: serverManaged, admin: { readOnly: true } },
     {
       name: 'syncStatus', type: 'select', defaultValue: 'local',
       options: [
@@ -48,10 +53,20 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
         { label: 'Pending', value: 'pending' },
         { label: 'Error', value: 'error' },
       ],
-      admin: { position: 'sidebar' },
+      access: serverManaged,
+      admin: { position: 'sidebar', readOnly: true },
     },
-    { name: 'lastSyncedAt', type: 'date', admin: { position: 'sidebar', readOnly: true } },
-    { name: 'lastSyncError', type: 'textarea', admin: { position: 'sidebar', readOnly: true } },
-    { name: 'raw', type: 'json', admin: { readOnly: true, condition: () => options.storeRaw !== false } },
+    { name: 'lastSyncedAt', type: 'date', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
+    { name: 'lastSyncError', type: 'textarea', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
+    {
+      name: 'raw',
+      type: 'json',
+      access: {
+        read: () => options.storeRaw === true,
+        create: () => false,
+        update: () => false,
+      },
+      admin: { readOnly: true, condition: () => options.storeRaw === true },
+    },
   ],
 })

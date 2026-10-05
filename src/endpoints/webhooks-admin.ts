@@ -1,5 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
+import { withWebhookToken } from '../lib/webhook.js'
 import { getClient, getOrganizationId, json, requireUser } from './helpers.js'
 
 const DEFAULT_EVENT_ACTIONS = ['event.created', 'event.updated', 'event.published', 'event.unpublished']
@@ -32,12 +33,13 @@ export const buildWebhookRegisterEndpoint = (options: EventbritePluginOptions): 
       if (!body?.endpointURL) throw new Error('endpointURL is required')
       const url = new URL(body.endpointURL)
       if (url.protocol !== 'https:') throw new Error('Eventbrite webhook endpoint must use HTTPS')
+      const endpointURL = withWebhookToken(url.toString(), options.webhookToken)
       const context = { operation: 'webhook-register' as const }
       const [client, organizationId] = await Promise.all([
         getClient(options, req, context),
         getOrganizationId(options, req, context),
       ])
-      const webhook = await client.createWebhook(organizationId, body.endpointURL, body.actions?.length ? body.actions : DEFAULT_EVENT_ACTIONS)
+      const webhook = await client.createWebhook(organizationId, endpointURL, body.actions?.length ? body.actions : DEFAULT_EVENT_ACTIONS)
       return json({ ok: true, webhook })
     } catch (error) {
       return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)

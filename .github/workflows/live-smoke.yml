@@ -1,0 +1,24 @@
+name: Live Eventbrite smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm test
+      - name: Read-only Eventbrite smoke test
+        run: node --import tsx scripts/live-smoke.ts
+        env:
+          EVENTBRITE_PRIVATE_TOKEN: ${{ secrets.EVENTBRITE_PRIVATE_TOKEN }}
+          EVENTBRITE_ORGANIZATION_ID: ${{ secrets.EVENTBRITE_ORGANIZATION_ID }}

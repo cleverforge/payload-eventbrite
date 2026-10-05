@@ -5,3 +5,8 @@ dist
 !.env.example
 coverage
 .DS_Store
+
+# Local Payload integration databases
+*.db
+*.db-shm
+*.db-wal

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Update repository metadata after transfer to CleverForgeAi.
+- Default raw Eventbrite event response storage to off.
+- Enforce configured inbound/outbound sync direction when registering endpoints and webhook storage.
+- Add bounded Eventbrite request timeouts and safe GET/HEAD retry handling.
+- Add optional shared-token protection for Eventbrite webhook callbacks with log sanitization.
+- Add unit coverage for retry safety and direction-aware configuration.
+- Protect Eventbrite-owned identifiers, sync state, remote timestamps, ticket IDs, and raw responses with Payload field-level access controls.
+- Add a real Payload + SQLite integration harness and read-only live Eventbrite smoke workflow.
+
 ## 0.3.0-beta.0
 
 - Add request-aware access-token and organization resolvers for multi-account integrations.
