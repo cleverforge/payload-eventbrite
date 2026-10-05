@@ -17,7 +17,7 @@ export async function upsertEvent(payload: Payload, event: EventbriteEvent, opti
   const venue = await linkVenueRelationship(payload, normalized.venueId, options, req)
   const data: any = {
     ...normalized,
-    ...(venue ? { venue } : {}),
+    ...(venue ? { venueRecord: venue } : {}),
     syncStatus: 'synced',
     lastSyncedAt: new Date().toISOString(),
     lastSyncError: null,
