@@ -9,8 +9,23 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
   path: '/eventbrite/webhook',
   method: 'post',
   handler: async (req: PayloadRequest) => {
-    assertWebhookToken(req, options.webhookToken)
-    const body = await req.json?.() as WebhookPayload
+    try {
+      assertWebhookToken(req, options.webhookToken)
+    } catch {
+      return json({ ok: false, error: 'Invalid Eventbrite webhook token' }, 401)
+    }
+
+    let body: WebhookPayload
+    try {
+      const parsed = await req.json?.()
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Webhook payload must be a JSON object')
+      }
+      body = parsed as WebhookPayload
+    } catch {
+      return json({ ok: false, error: 'Invalid Eventbrite webhook payload' }, 400)
+    }
+
     const sanitizedBody = sanitizeWebhookPayload(body)
     const logSlug = options.webhookLogSlug || 'eventbrite-webhooks'
     const log: any = await req.payload.create({
@@ -34,11 +49,23 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
         const event = await client.request<any>(body.api_url)
         await upsertEvent(req.payload, event, options, req)
       }
-      await req.payload.update({ collection: logSlug as any, id: log.id, data: { processed: true }, overrideAccess: true, req })
+      await req.payload.update({
+        collection: logSlug as any,
+        id: log.id,
+        data: { processed: true },
+        overrideAccess: true,
+        req,
+      })
       return json({ ok: true })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      await req.payload.update({ collection: logSlug as any, id: log.id, data: { error: message }, overrideAccess: true, req })
+      await req.payload.update({
+        collection: logSlug as any,
+        id: log.id,
+        data: { error: message },
+        overrideAccess: true,
+        req,
+      })
       req.payload.logger.error({ err: error }, 'Eventbrite webhook processing failed')
       return json({ ok: false, error: message }, 400)
     }
