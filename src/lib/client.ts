@@ -1,4 +1,4 @@
-import type { EventbriteEvent } from '../types.js'
+import type { EventbriteEvent, EventbriteTicketClass } from '../types.js'
 
 const API_BASE = 'https://www.eventbriteapi.com/v3'
 
@@ -22,7 +22,7 @@ export class EventbriteClient {
     if (newWaypoint) this.waypoint = newWaypoint
 
     const text = await response.text()
-    let body: any = undefined
+    let body: any
     if (text) {
       try { body = JSON.parse(text) } catch { body = text }
     }
@@ -59,6 +59,18 @@ export class EventbriteClient {
     return this.request(`/events/${encodeURIComponent(eventId)}/unpublish/`, { method: 'POST' })
   }
 
+  listTicketClasses(eventId: string): Promise<{ ticket_classes?: EventbriteTicketClass[] }> {
+    return this.request(`/events/${encodeURIComponent(eventId)}/ticket_classes/`)
+  }
+
+  createTicketClass(eventId: string, payload: unknown): Promise<EventbriteTicketClass> {
+    return this.request(`/events/${encodeURIComponent(eventId)}/ticket_classes/`, { method: 'POST', body: JSON.stringify(payload) })
+  }
+
+  updateTicketClass(eventId: string, ticketClassId: string, payload: unknown): Promise<EventbriteTicketClass> {
+    return this.request(`/events/${encodeURIComponent(eventId)}/ticket_classes/${encodeURIComponent(ticketClassId)}/`, { method: 'POST', body: JSON.stringify(payload) })
+  }
+
   listWebhooks(organizationId: string): Promise<{ webhooks?: any[] }> {
     return this.request(`/organizations/${encodeURIComponent(organizationId)}/webhooks/`)
   }
@@ -74,6 +86,14 @@ export class EventbriteClient {
 export function assertEventbriteURL(value: string) {
   const url = new URL(value)
   if (url.protocol !== 'https:' || !['www.eventbriteapi.com', 'eventbriteapi.com'].includes(url.hostname)) {
-    throw new Error('Refusing to fetch non-Eventbrite webhook resource URL')
+    throw new Error('Refusing to fetch non-Eventbrite API URL')
+  }
+}
+
+export function assertEventbriteEventURL(value: string) {
+  assertEventbriteURL(value)
+  const url = new URL(value)
+  if (!/^\/v3\/events\/[^/]+\/?$/.test(url.pathname)) {
+    throw new Error('Refusing to fetch a non-event Eventbrite webhook resource')
   }
 }
