@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add first-class Eventbrite venue sync/create/update and Payload event-to-venue relationships while retaining direct venueId compatibility.
+
 - Add authenticated Eventbrite webhook deletion for clean disable/uninstall workflows.
 
 - Add idempotent remote-event synchronization coverage against a real Payload SQLite database.
