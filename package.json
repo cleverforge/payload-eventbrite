@@ -17,7 +17,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "pack:check": "npm run build && npm pack --dry-run",\n    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "pack:check": "npm run build && npm pack --dry-run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "keywords": ["payload", "payloadcms", "payload-plugin", "eventbrite", "events", "webhooks", "calendar"],
   "repository": {
