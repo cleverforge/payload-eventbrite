@@ -56,6 +56,8 @@ Keep Eventbrite tokens server-side. Raw Eventbrite responses are not persisted o
 
 Core event, venue, and organizer collections default to public read access so they can power public event listings, but create/update/delete require an authenticated Payload user. Hosts can override these defaults with `publicDataReadAccess` and `managementAccess` to enforce application-specific RBAC.
 
+Management API routes such as sync, push, publish/unpublish, venue/organizer mutation, and webhook administration also require authentication by default. Use `managementEndpointAccess(req)` for role-based endpoint authorization. Authentication failures return HTTP 401; authenticated users rejected by the host policy receive HTTP 403.
+
 `syncDirection` is enforced at plugin-registration time:
 - `eventbrite-to-payload` registers import/webhook endpoints only.
 - `payload-to-eventbrite` registers push/publish endpoints only.

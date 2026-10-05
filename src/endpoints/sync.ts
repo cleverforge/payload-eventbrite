@@ -1,6 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
-import { getClient, getOrganizationId, json, requireUser } from './helpers.js'
+import { errorResponse, getClient, getOrganizationId, json, requireManagement } from './helpers.js'
 import { upsertEvent } from '../lib/upsert.js'
 
 export const buildSyncEndpoint = (options: EventbritePluginOptions): Endpoint => ({
@@ -8,7 +8,7 @@ export const buildSyncEndpoint = (options: EventbritePluginOptions): Endpoint =>
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const context = { operation: 'sync' as const }
       const [client, organizationId] = await Promise.all([
         getClient(options, req, context),
@@ -26,7 +26,7 @@ export const buildSyncEndpoint = (options: EventbritePluginOptions): Endpoint =>
       } while (continuation)
       return json({ ok: true, organizationId, imported: count })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })

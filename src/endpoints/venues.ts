@@ -1,6 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
-import { getClient, getOrganizationId, json, requireUser } from './helpers.js'
+import { errorResponse, getClient, getOrganizationId, json, requireManagement } from './helpers.js'
 import { normalizeVenue, toVenuePayload, upsertVenue } from '../lib/venues.js'
 
 export const buildVenueSyncEndpoint = (options: EventbritePluginOptions): Endpoint => ({
@@ -8,7 +8,7 @@ export const buildVenueSyncEndpoint = (options: EventbritePluginOptions): Endpoi
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const context = { operation: 'venue-sync' as const }
       const [client, organizationId] = await Promise.all([
         getClient(options, req, context),
@@ -26,7 +26,7 @@ export const buildVenueSyncEndpoint = (options: EventbritePluginOptions): Endpoi
       } while (continuation)
       return json({ ok: true, organizationId, imported })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })
@@ -36,7 +36,7 @@ export const buildVenuePushEndpoint = (options: EventbritePluginOptions): Endpoi
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const slug = options.venuesSlug || 'eventbrite-venues'
       const id = req.routeParams?.id as string
       const doc: any = await req.payload.findByID({ collection: slug as any, id, req })
@@ -62,7 +62,7 @@ export const buildVenuePushEndpoint = (options: EventbritePluginOptions): Endpoi
       })
       return json({ ok: true, venue: updated })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })

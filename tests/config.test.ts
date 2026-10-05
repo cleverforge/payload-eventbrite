@@ -170,3 +170,39 @@ test('host applications can override Core collection read and management access'
   assert.equal(await events.access.create({ req: { user: { id: 'u1', role: 'member' } } }), false)
   assert.equal(await events.access.create({ req: { user: { id: 'u2', role: 'admin' } } }), true)
 })
+
+
+test('management endpoints distinguish unauthenticated and unauthorized requests', async () => {
+  const config: any = eventbritePlugin({
+    ...base,
+    managementEndpointAccess: (req: any) => req.user?.role === 'admin',
+  })({ collections: [] } as any)
+  const sync = config.endpoints.find((endpoint: any) => endpoint.path === '/eventbrite/sync')
+  assert.ok(sync?.handler)
+
+  const unauthenticated: Response = await sync.handler({
+    user: undefined,
+    headers: new Headers(),
+  } as any)
+  assert.equal(unauthenticated.status, 401)
+
+  const unauthorized: Response = await sync.handler({
+    user: { id: 'u1', role: 'member' },
+    headers: new Headers(),
+  } as any)
+  assert.equal(unauthorized.status, 403)
+
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = (async () => Response.json({ events: [], pagination: {} })) as typeof fetch
+  try {
+    const authorized: Response = await sync.handler({
+      user: { id: 'u2', role: 'admin' },
+      headers: new Headers(),
+      payload: {},
+    } as any)
+    assert.equal(authorized.status, 200)
+    assert.equal((await authorized.json() as any).imported, 0)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
