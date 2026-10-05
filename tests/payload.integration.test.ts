@@ -12,10 +12,10 @@ async function cleanupDatabase(databasePath: string) {
   await rm(`${databasePath}-wal`, { force: true }).catch(() => undefined)
 }
 
-test('plugin boots in a real Payload SQLite instance and persists events', async () => {
-  const databasePath = resolve(process.cwd(), `.tmp-payload-eventbrite-${process.pid}-boot.db`)
+test('Core boots and synchronizes Eventbrite events idempotently in a real Payload SQLite instance', async () => {
+  const databasePath = resolve(process.cwd(), `.tmp-payload-eventbrite-${process.pid}.db`)
   const config = createDevConfig(`file:${databasePath}`)
-  const payload = await getPayload({ config, key: `payload-eventbrite-${process.pid}-boot` })
+  const payload = await getPayload({ config, key: `payload-eventbrite-${process.pid}` })
 
   try {
     assert.ok(payload.collections['eventbrite-events'])
@@ -41,18 +41,7 @@ test('plugin boots in a real Payload SQLite instance and persists events', async
     })
     assert.equal(found.id, created.id)
     assert.equal(found.raw, null)
-  } finally {
-    await payload.destroy()
-    await cleanupDatabase(databasePath)
-  }
-})
 
-test('Eventbrite event synchronization is idempotent in a real Payload database', async () => {
-  const databasePath = resolve(process.cwd(), `.tmp-payload-eventbrite-${process.pid}-sync.db`)
-  const config = createDevConfig(`file:${databasePath}`)
-  const payload = await getPayload({ config, key: `payload-eventbrite-${process.pid}-sync` })
-
-  try {
     const options: any = {
       eventsSlug: 'eventbrite-events',
       storeRaw: false,
