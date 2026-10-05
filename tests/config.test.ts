@@ -104,7 +104,7 @@ test('raw Eventbrite responses are unreadable unless explicitly enabled', async 
 test('events expose a local venue relationship while retaining direct venueId compatibility', () => {
   const config: any = eventbritePlugin(base)({ collections: [] } as any)
   const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
-  const venue = events.fields.find((field: any) => field.name === 'venue')
+  const venue = events.fields.find((field: any) => field.name === 'venueRecord')
   const venueId = events.fields.find((field: any) => field.name === 'venueId')
   assert.equal(venue.type, 'relationship')
   assert.equal(venue.relationTo, 'eventbrite-venues')
