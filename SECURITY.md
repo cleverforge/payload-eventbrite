@@ -39,3 +39,8 @@ Remote identifiers, synchronization state, remote status/timestamps, basic-ticke
 The event, venue, and organizer collections are public-read by default because they represent public event-listing data. Create, update, and delete operations require an authenticated Payload user by default. Deployments with stricter authorization requirements should provide `publicDataReadAccess` and `managementAccess` functions.
 
 Eventbrite-owned IDs, sync metadata, and raw payload fields remain server-managed even for authenticated users.
+
+
+## Management endpoint authorization
+
+Core management endpoints require an authenticated Payload user. Deployments can set `managementEndpointAccess` to enforce role- or policy-based authorization for synchronization, publishing, venue/organizer operations, and webhook administration. Public Eventbrite webhook delivery remains separate and is protected through resource validation and the optional private callback token.
