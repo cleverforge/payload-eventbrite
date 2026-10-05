@@ -4,9 +4,15 @@ import { normalizeEventbriteEvent } from './normalize.js'
 import { linkVenueRelationship } from './venues.js'
 import { linkOrganizerRelationship } from './organizers.js'
 
-export async function upsertEvent(payload: Payload, event: EventbriteEvent, options: EventbritePluginOptions, req?: PayloadRequest) {
+export async function upsertEvent(
+  payload: Payload,
+  event: EventbriteEvent,
+  options: EventbritePluginOptions,
+  req?: PayloadRequest,
+  renderedDescriptionHTML?: string,
+) {
   const slug = options.eventsSlug || 'eventbrite-events'
-  const normalized = normalizeEventbriteEvent(event, options.storeRaw === true)
+  const normalized = normalizeEventbriteEvent(event, options.storeRaw === true, renderedDescriptionHTML)
   const existing = await payload.find({
     collection: slug as any,
     where: { eventbriteId: { equals: normalized.eventbriteId } },
@@ -19,8 +25,11 @@ export async function upsertEvent(payload: Payload, event: EventbriteEvent, opti
     linkVenueRelationship(payload, normalized.venueId, options, req),
     linkOrganizerRelationship(payload, normalized.organizerId, options, req),
   ])
+  const normalizedData = Object.fromEntries(
+    Object.entries(normalized).filter(([, value]) => value !== undefined),
+  )
   const data: any = {
-    ...normalized,
+    ...normalizedData,
     ...(venue ? { venueRecord: venue } : {}),
     ...(organizer ? { organizerRecord: organizer } : {}),
     syncStatus: 'synced',
