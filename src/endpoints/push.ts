@@ -31,6 +31,9 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
           )
 
       const normalized = normalizeEventbriteEvent(event, options.storeRaw === true)
+      const normalizedData = Object.fromEntries(
+        Object.entries(normalized).filter(([, value]) => value !== undefined),
+      )
       const ticket = await syncBasicTicket(client, event.id, doc, defaults.currency)
       const basicTicket = ticket?.id
         ? { ...(doc.basicTicket || {}), ticketClassId: ticket.id }
@@ -40,7 +43,8 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
         collection: slug as any,
         id,
         data: {
-          ...normalized,
+          ...normalizedData,
+          descriptionHTML: doc.descriptionHTML ?? normalized.descriptionHTML,
           basicTicket,
           syncStatus: 'synced',
           lastSyncedAt: new Date().toISOString(),
