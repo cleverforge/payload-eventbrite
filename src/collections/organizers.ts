@@ -1,9 +1,11 @@
 import type { CollectionConfig } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
+import { publicDataAccess } from '../lib/access.js'
 
 const serverManaged = { create: () => false, update: () => false }
 
 export const buildOrganizersCollection = (options: EventbritePluginOptions): CollectionConfig => ({
+  access: publicDataAccess(options),
   slug: options.organizersSlug || 'eventbrite-organizers',
   admin: {
     group: 'Eventbrite',
