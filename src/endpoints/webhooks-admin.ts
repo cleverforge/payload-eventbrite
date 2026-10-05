@@ -46,3 +46,22 @@ export const buildWebhookRegisterEndpoint = (options: EventbritePluginOptions): 
     }
   },
 })
+
+
+export const buildWebhookDeleteEndpoint = (options: EventbritePluginOptions): Endpoint => ({
+  path: '/eventbrite/webhooks/:id',
+  method: 'delete',
+  handler: async (req: PayloadRequest) => {
+    try {
+      requireUser(req)
+      const id = req.routeParams?.id as string
+      if (!id) throw new Error('webhook id is required')
+      const context = { operation: 'webhook-delete' as const }
+      const client = await getClient(options, req, context)
+      const result = await client.deleteWebhook(id)
+      return json({ ok: true, webhookId: id, result: result ?? null })
+    } catch (error) {
+      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+    }
+  },
+})
