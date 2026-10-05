@@ -14,6 +14,16 @@ async function cleanupDatabase(databasePath: string) {
   await rm(`${databasePath}-wal`, { force: true }).catch(() => undefined)
 }
 
+async function destroyPayload(payload: any) {
+  if (typeof payload.destroy === 'function') {
+    await payload.destroy()
+    return
+  }
+  if (typeof payload.db?.destroy === 'function') {
+    await payload.db.destroy()
+  }
+}
+
 test('Core boots and synchronizes Eventbrite events idempotently in a real Payload SQLite instance', async () => {
   const databasePath = resolve(process.cwd(), `.tmp-payload-eventbrite-${process.pid}.db`)
   const config = createDevConfig(`file:${databasePath}`)
@@ -185,7 +195,7 @@ test('Core boots and synchronizes Eventbrite events idempotently in a real Paylo
     assert.equal(result.docs[0]?.title, 'Remote Event v2')
     assert.equal(result.docs[0]?.raw, null)
   } finally {
-    await payload.destroy()
+    await destroyPayload(payload)
     await cleanupDatabase(databasePath)
   }
 })

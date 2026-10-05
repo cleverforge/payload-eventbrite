@@ -11,6 +11,16 @@ async function cleanupDatabase(databasePath: string) {
   await rm(`${databasePath}-wal`, { force: true }).catch(() => undefined)
 }
 
+async function destroyPayload(payload: any) {
+  if (typeof payload.destroy === 'function') {
+    await payload.destroy()
+    return
+  }
+  if (typeof payload.db?.destroy === 'function') {
+    await payload.db.destroy()
+  }
+}
+
 function eventResponse(overrides: Record<string, unknown> = {}) {
   return {
     id: 'remote-event-1',
@@ -172,7 +182,7 @@ test('Core push, publish, and unpublish endpoints work with real Payload persist
     )
   } finally {
     globalThis.fetch = originalFetch
-    await payload.destroy()
+    await destroyPayload(payload)
     await cleanupDatabase(databasePath)
   }
 })
