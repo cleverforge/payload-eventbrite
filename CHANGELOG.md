@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add real Payload integration coverage for the authenticated push, publish, and unpublish endpoint lifecycle using a mocked Eventbrite transport.
+
 - Add first-class Eventbrite organizer synchronization, creation, and Payload event-to-organizer relationships while retaining direct organizerId compatibility.
 - Expand the read-only live Eventbrite smoke test to venues and organizers.
 - Keep manual event push raw Eventbrite response storage opt-in, matching the documented data-minimization default.
