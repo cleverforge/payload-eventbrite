@@ -6,7 +6,7 @@ import { buildWebhookEndpoint } from './endpoints/webhook.js'
 import { buildSyncEndpoint } from './endpoints/sync.js'
 import { buildPushEndpoint, buildPublishEndpoint, buildUnpublishEndpoint } from './endpoints/push.js'
 import { buildWebhooksListEndpoint, buildWebhookRegisterEndpoint } from './endpoints/webhooks-admin.js'
-import { getClient } from './endpoints/helpers.js'
+import { getClient, getOrganizationId } from './endpoints/helpers.js'
 import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from './lib/normalize.js'
 import { syncBasicTicket } from './lib/tickets.js'
 
@@ -32,7 +32,12 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
 
   return (incomingConfig: Config): Config => {
     if (!opts.enabled) return incomingConfig
-    if (!opts.organizationId) throw new Error('@cleverforge/payload-eventbrite requires organizationId')
+    if (!opts.organizationId && !opts.organizationIdResolver) {
+      throw new Error('@cleverforge/payload-eventbrite requires organizationId or organizationIdResolver')
+    }
+    if (!opts.accessToken && !opts.accessTokenResolver) {
+      throw new Error('@cleverforge/payload-eventbrite requires accessToken or accessTokenResolver')
+    }
 
     const events = buildEventsCollection(opts)
     const outboundAllowed = opts.syncDirection === 'payload-to-eventbrite' || opts.syncDirection === 'two-way'
@@ -42,7 +47,8 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
         if (context?.eventbriteInbound) return doc
 
         try {
-          const client = await getClient(opts, req)
+          const resolverContext = { operation: 'auto-push' as const, document: doc }
+          const client = await getClient(opts, req, resolverContext)
           const defaults = {
             currency: opts.defaultCurrency || 'USD',
             timezone: opts.defaultTimezone || 'America/New_York',
@@ -50,7 +56,10 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
 
           const remote = doc.eventbriteId
             ? await client.updateEvent(doc.eventbriteId, toEventbriteUpdatePayload(doc, defaults))
-            : await client.createEvent(opts.organizationId, toEventbriteCreatePayload(doc, defaults))
+            : await client.createEvent(
+                await getOrganizationId(opts, req, resolverContext),
+                toEventbriteCreatePayload(doc, defaults),
+              )
 
           const normalized = normalizeEventbriteEvent(remote, opts.storeRaw !== false)
           const ticket = await syncBasicTicket(client, remote.id, doc, defaults.currency)
