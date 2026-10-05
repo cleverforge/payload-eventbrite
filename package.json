@@ -46,7 +46,7 @@
   },
   "homepage": "https://github.com/CleverForgeAi/payload-eventbrite#readme",
   "peerDependencies": {
-    "payload": ">=3.0.0"
+    "payload": ">=3.0.0 <4"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
