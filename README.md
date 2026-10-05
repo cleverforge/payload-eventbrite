@@ -96,16 +96,24 @@ Core exports:
 
 For multi-account applications, persist tokens in encrypted server-side storage and return the correct token through `accessTokenResolver`.
 
-## Multi-tenant token resolution
+## Dynamic / multi-tenant connection resolution
+
+Core supports request-aware token and organization resolution. This lets a commercial extension or host application select the Eventbrite account without duplicating Core event logic.
 
 ```ts
 eventbritePlugin({
-  organizationId: '...',
-  accessTokenResolver: async (req) => {
-    return getTokenForTenant(req)
+  accessTokenResolver: async (req, context) => {
+    return getTokenForRequest(req, context)
+  },
+  organizationIdResolver: async (req, context) => {
+    return getOrganizationForRequest(req, context)
   },
 })
 ```
+
+Resolvers receive an operation context such as `sync`, `push`, `publish`, `unpublish`, `webhook`, `webhook-list`, `webhook-register`, or `auto-push`. Event document or webhook context is included when relevant.
+
+A static `accessToken` / `organizationId` configuration remains supported.
 
 ## Core vs Pro
 
