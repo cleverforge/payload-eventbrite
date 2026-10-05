@@ -21,18 +21,18 @@ Purpose: synchronize and publish event records between Payload CMS and Eventbrit
 - CI, typecheck, tests, Apache-2.0
 
 ### Core additions before stable v1
-- Venue synchronization and venue creation
-- Organizer synchronization and selection
+- [x] Venue synchronization and venue creation
+- [ ] Organizer synchronization and selection
 - Basic Ticket Class synchronization and creation
   - free ticket
   - paid ticket
   - basic quantity/capacity
-- Event logo/media synchronization into Payload uploads
-- Payload admin actions for Push, Publish, Unpublish, and Sync Now
+- [ ] Event logo/media synchronization into Payload uploads
+- [ ] Payload admin actions for Push, Publish, Unpublish, and Sync Now
 - Clear publish-readiness validation
-- Simple scheduled reconciliation
-- Configurable custom Payload event collection mapping
-- Basic conflict policy using Eventbrite/Payload changed timestamps
+- [ ] Simple scheduled reconciliation
+- [ ] Configurable custom Payload event collection mapping
+- [ ] Basic conflict policy using Eventbrite/Payload changed timestamps
 
 These capabilities remain public because Eventbrite requires core event setup, including an organizer and at least one ticket, before an event can be published.
 
@@ -88,9 +88,9 @@ Platform-neutral event schema and adapters. This should remain reusable infrastr
 
 ## Packaging recommendation
 
-- Public repository: `cleverforge/payload-eventbrite`
+- Public repository: `CleverForgeAi/payload-eventbrite`
 - Public npm: `@cleverforge/payload-eventbrite`
-- Future private/commercial repository: `cleverforge/payload-eventbrite-pro`
+- Private/commercial repository: `CleverForgeAi/payload-eventbrite-pro`
 - Future commercial npm: `@cleverforge/payload-eventbrite-pro`
 
 The Pro package should import and extend the public package so bug fixes, Eventbrite API changes, and Payload compatibility stay centralized in Core.
