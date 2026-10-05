@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0-beta.0
 
 - Add request-aware access-token and organization resolvers for multi-account integrations.
 - Pass operation, event-document, and webhook context to connection resolvers.
