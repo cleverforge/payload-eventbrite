@@ -2,7 +2,7 @@ import type { EventbriteEvent, NormalizedEventbriteEvent } from '../types.js'
 
 const compact = <T>(value: T | null | undefined): T | undefined => value == null ? undefined : value
 
-export function normalizeEventbriteEvent(event: EventbriteEvent, storeRaw = true): NormalizedEventbriteEvent {
+export function normalizeEventbriteEvent(event: EventbriteEvent, storeRaw = false): NormalizedEventbriteEvent {
   return {
     eventbriteId: event.id,
     title: event.name?.text || event.name?.html || `Eventbrite ${event.id}`,
