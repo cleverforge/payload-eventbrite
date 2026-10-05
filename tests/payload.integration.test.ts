@@ -33,7 +33,7 @@ test('plugin boots in a real Payload SQLite instance and persists events', async
       id: created.id,
     })
     assert.equal(found.id, created.id)
-    assert.equal(found.raw, undefined)
+    assert.equal(found.raw, null)
   } finally {
     await payload.destroy()
     await rm(databasePath, { force: true }).catch(() => undefined)
