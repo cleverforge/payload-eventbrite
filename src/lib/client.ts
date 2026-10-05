@@ -109,6 +109,10 @@ export class EventbriteClient {
     return this.request(`/events/${encodeURIComponent(eventId)}/unpublish/`, { method: 'POST' })
   }
 
+  deleteEvent(eventId: string): Promise<{ deleted?: boolean } | undefined> {
+    return this.request(`/events/${encodeURIComponent(eventId)}/`, { method: 'DELETE' })
+  }
+
   listTicketClasses(eventId: string): Promise<{ ticket_classes?: EventbriteTicketClass[] }> {
     return this.request(`/events/${encodeURIComponent(eventId)}/ticket_classes/`)
   }

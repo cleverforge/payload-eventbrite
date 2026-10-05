@@ -178,6 +178,8 @@ The integration suite boots a real Payload instance, installs the plugin, create
 
 For an optional read-only test against a real Eventbrite account, configure GitHub Actions secrets `EVENTBRITE_PRIVATE_TOKEN` and `EVENTBRITE_ORGANIZATION_ID`, then run **Live Eventbrite smoke test**. It reads the authenticated user, events, webhooks, venues, organizers, and a sample ticket list without creating or modifying Eventbrite data.
 
+For a release-candidate write test, run **Live Eventbrite write acceptance** and type the exact confirmation phrase `CREATE_PUBLISH_UNPUBLISH_DELETE_TEST_EVENT`. The workflow creates an unlisted online event 30 days in the future, creates a free ticket, publishes it, unpublishes it, and deletes it. Cleanup also runs on failure. Use a dedicated Eventbrite test organization/account; do not run this workflow against a production organization with unmanaged automation.
+
 CI runs against Node 20 and Node 22.
 
 ## License

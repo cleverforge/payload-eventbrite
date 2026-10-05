@@ -1,0 +1,38 @@
+name: Live Eventbrite write acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type CREATE_PUBLISH_UNPUBLISH_DELETE_TEST_EVENT
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eventbrite-live-write-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    if: ${{ inputs.confirm == 'CREATE_PUBLISH_UNPUBLISH_DELETE_TEST_EVENT' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run typecheck
+      - run: npm test
+      - name: Create, publish, unpublish, and delete a test Eventbrite event
+        run: node --import tsx scripts/live-acceptance.ts
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_TEST_SECRET }}
+          EVENTBRITE_PRIVATE_TOKEN: ${{ secrets.EVENTBRITE_PRIVATE_TOKEN }}
+          EVENTBRITE_ORGANIZATION_ID: ${{ secrets.EVENTBRITE_ORGANIZATION_ID }}
+          EVENTBRITE_ACCEPTANCE_CONFIRM: ${{ inputs.confirm }}
