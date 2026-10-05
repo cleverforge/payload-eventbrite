@@ -43,3 +43,77 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  consumer-package:
+    name: consumer package (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        include:
+          - name: minimum
+            node: 20
+            payload: 3.0.0
+            adapter: 3.0.0
+          - name: current
+            node: 22
+            payload: 3
+            adapter: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm install
+      - run: npm run build
+      - name: Pack plugin
+        run: |
+          mkdir -p "$RUNNER_TEMP/eventbrite-consumer"
+          npm pack --pack-destination "$RUNNER_TEMP/eventbrite-consumer"
+      - name: Install packed plugin in clean Payload consumer
+        env:
+          PAYLOAD_VERSION: ${{ matrix.payload }}
+          ADAPTER_VERSION: ${{ matrix.adapter }}
+        run: |
+          cd "$RUNNER_TEMP/eventbrite-consumer"
+          npm init -y >/dev/null
+          npm pkg set type=module >/dev/null
+          npm install ./*.tgz "payload@$PAYLOAD_VERSION" "@payloadcms/db-sqlite@$ADAPTER_VERSION" --ignore-scripts --no-audit --no-fund
+          cat > smoke.mjs <<'EOF'
+          import { rm } from 'node:fs/promises'
+          import { resolve } from 'node:path'
+          import { sqliteAdapter } from '@payloadcms/db-sqlite'
+          import { buildConfig, getPayload } from 'payload'
+          import { eventbritePlugin, EventbriteClient } from '@cleverforge/payload-eventbrite'
+
+          if (typeof eventbritePlugin !== 'function' || typeof EventbriteClient !== 'function') {
+            throw new Error('Packed Core exports are incomplete')
+          }
+
+          const databasePath = resolve(process.cwd(), 'consumer-smoke.db')
+          const config = buildConfig({
+            secret: 'consumer-package-test-secret',
+            telemetry: false,
+            typescript: { autoGenerate: false },
+            db: sqliteAdapter({ client: { url: 'file:' + databasePath } }),
+            plugins: [
+              eventbritePlugin({
+                organizationId: 'consumer-test-org',
+                accessToken: 'consumer-test-token',
+                storeRaw: false,
+              }),
+            ],
+          })
+          const payload = await getPayload({ config, key: 'payload-eventbrite-consumer-package' })
+          try {
+            for (const slug of ['eventbrite-events', 'eventbrite-webhooks', 'eventbrite-venues', 'eventbrite-organizers']) {
+              if (!payload.collections[slug]) throw new Error('Missing packed collection: ' + slug)
+            }
+          } finally {
+            if (typeof payload.destroy === 'function') await payload.destroy()
+            await rm(databasePath, { force: true }).catch(() => undefined)
+            await rm(databasePath + '-shm', { force: true }).catch(() => undefined)
+            await rm(databasePath + '-wal', { force: true }).catch(() => undefined)
+          }
+          EOF
+          node smoke.mjs
