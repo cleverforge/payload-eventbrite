@@ -22,3 +22,8 @@ Raw Eventbrite event responses are disabled by default. Enable `storeRaw` only w
 ## Network safety
 
 Webhook resource URLs are restricted to Eventbrite event API URLs to reduce SSRF risk. Eventbrite API requests use bounded timeouts. Automatic retries apply only to safe GET/HEAD requests; mutation requests are not replayed automatically.
+
+
+## Webhook authentication
+
+Eventbrite does not document a webhook signature header. For production deployments, configure `webhookToken` and register webhooks through Core so the callback URL includes a private token. Core validates the token using a timing-safe comparison and removes it from stored webhook payload metadata.
