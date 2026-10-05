@@ -88,6 +88,7 @@ Assuming Payload's standard `/api` prefix:
 - `POST /api/eventbrite/unpublish/:id`
 - `GET /api/eventbrite/webhooks`
 - `POST /api/eventbrite/webhooks/register`
+- `DELETE /api/eventbrite/webhooks/:id`
 
 All management endpoints require an authenticated Payload user. The Eventbrite webhook endpoint is public because Eventbrite must call it.
 
