@@ -7,10 +7,10 @@ export const buildWebhookLogCollection = (options: EventbritePluginOptions): Col
   slug: options.webhookLogSlug || 'eventbrite-webhooks',
   admin: { group: 'Eventbrite', useAsTitle: 'action', defaultColumns: ['action', 'eventbriteWebhookId', 'processed', 'createdAt'] },
   access: {
-    read: authenticated,
+    read: options.managementAccess || authenticated,
     create: () => false,
     update: () => false,
-    delete: authenticated,
+    delete: options.managementAccess || authenticated,
   },
   fields: [
     { name: 'action', type: 'text' },
