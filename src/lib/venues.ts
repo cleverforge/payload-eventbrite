@@ -78,7 +78,7 @@ export async function resolveVenueIdForEvent(
   req?: PayloadRequest,
 ) {
   if (doc.onlineEvent) return undefined
-  const relationship = doc.venue
+  const relationship = doc.venueRecord
   if (relationship && typeof relationship === 'object' && relationship.venueId) {
     return String(relationship.venueId)
   }
