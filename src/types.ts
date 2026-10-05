@@ -2,11 +2,34 @@ import type { PayloadRequest } from 'payload'
 
 export type SyncDirection = 'eventbrite-to-payload' | 'payload-to-eventbrite' | 'two-way'
 
+export type EventbriteResolverOperation =
+  | 'sync'
+  | 'push'
+  | 'publish'
+  | 'unpublish'
+  | 'webhook'
+  | 'webhook-list'
+  | 'webhook-register'
+  | 'auto-push'
+
+export interface EventbriteResolverContext {
+  operation?: EventbriteResolverOperation
+  document?: Record<string, unknown>
+  webhook?: WebhookPayload
+}
+
 export interface EventbritePluginOptions {
   enabled?: boolean
-  organizationId: string
+  organizationId?: string
+  organizationIdResolver?: (
+    req?: PayloadRequest,
+    context?: EventbriteResolverContext,
+  ) => Promise<string> | string
   accessToken?: string
-  accessTokenResolver?: (req?: PayloadRequest) => Promise<string> | string
+  accessTokenResolver?: (
+    req?: PayloadRequest,
+    context?: EventbriteResolverContext,
+  ) => Promise<string> | string
   syncDirection?: SyncDirection
   eventsSlug?: string
   webhookLogSlug?: string
