@@ -14,6 +14,8 @@ Standalone open-source Eventbrite integration for Payload CMS. It does **not** d
 - OAuth authorization-code helpers
 - Private-token or request-aware token resolver
 - Manual or automatic outbound synchronization
+- Direction-aware endpoint registration
+- Safe GET retries with bounded timeouts
 - Webhook delivery logs
 - Eventbrite API waypoint-token support
 - SSRF protection for webhook resource retrieval
@@ -39,12 +41,22 @@ export default buildConfig({
       defaultCurrency: 'USD',
       syncDirection: 'two-way',
       autoPush: false,
+      storeRaw: false,
+      requestTimeoutMs: 15000,
+      requestRetries: 2,
     }),
   ],
 })
 ```
 
-Keep Eventbrite tokens server-side.
+Keep Eventbrite tokens server-side. Raw Eventbrite responses are not persisted unless `storeRaw: true` is explicitly enabled.
+
+`syncDirection` is enforced at plugin-registration time:
+- `eventbrite-to-payload` registers import/webhook endpoints only.
+- `payload-to-eventbrite` registers push/publish endpoints only.
+- `two-way` registers both.
+
+Core retries only safe GET/HEAD requests after transient network/429/5xx failures. Mutating POST requests are never retried automatically to avoid duplicate Eventbrite writes.
 
 ## Event fields required for publication
 
@@ -123,15 +135,22 @@ The commercial `@cleverforge/payload-eventbrite-pro` package extends Core with a
 
 Broader calendar synchronization such as Microsoft 365 and Google Calendar belongs in a separate reusable CleverForge calendar product rather than in Eventbrite Core.
 
-## Development
+## Development and testing
+
+Payload recommends a local dev project and integration tests for published plugins. This repository includes a SQLite-backed Payload test harness under `dev/`.
 
 ```bash
 npm install
 npm run typecheck
-npm test
+npm run test:unit
+npm run test:integration
 npm run build
 npm run pack:check
 ```
+
+The integration suite boots a real Payload instance, installs the plugin, creates an event through Payload's Local API, reads it back, and destroys the test database.
+
+For an optional read-only test against a real Eventbrite account, configure GitHub Actions secrets `EVENTBRITE_PRIVATE_TOKEN` and `EVENTBRITE_ORGANIZATION_ID`, then run **Live Eventbrite smoke test**. It reads the authenticated user, event list, webhooks, and a sample ticket list without creating or modifying Eventbrite data.
 
 CI runs against Node 20 and Node 22.
 
