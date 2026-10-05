@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Restrict anonymous event reads to listed Eventbrite events in public lifecycle states while preserving authenticated management visibility.
+- Add `publicEventReadAccess` for host-defined event visibility policies.
+
 - Add real Payload integration coverage for the authenticated push, publish, and unpublish endpoint lifecycle using a mocked Eventbrite transport.
 
 - Add first-class Eventbrite organizer synchronization, creation, and Payload event-to-organizer relationships while retaining direct organizerId compatibility.
