@@ -116,3 +116,26 @@ test('creates organizers with one organization-scoped POST request', async () =>
     globalThis.fetch = originalFetch
   }
 })
+
+
+test('deletes an Eventbrite event with one authenticated DELETE request', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls++
+    const url = new URL(String(input))
+    const headers = new Headers(init?.headers)
+    assert.equal(url.pathname, '/v3/events/event-1/')
+    assert.equal(init?.method, 'DELETE')
+    assert.equal(headers.get('Authorization'), 'Bearer test-token')
+    return Response.json({ deleted: true })
+  }) as typeof fetch
+
+  try {
+    const result = await new EventbriteClient('test-token').deleteEvent('event-1')
+    assert.equal(result?.deleted, true)
+    assert.equal(calls, 1)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
