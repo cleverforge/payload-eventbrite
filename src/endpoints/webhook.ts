@@ -1,5 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions, WebhookPayload } from '../types.js'
+import { assertEventbriteEventURL } from '../lib/client.js'
 import { getClient, json } from './helpers.js'
 import { upsertEvent } from '../lib/upsert.js'
 
@@ -23,7 +24,9 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
     })
 
     try {
-      if (body?.api_url && /^event\./.test(body?.config?.action || '')) {
+      const action = body?.config?.action || ''
+      if (body?.api_url && /^event\./.test(action)) {
+        assertEventbriteEventURL(body.api_url)
         const client = await getClient(options, req)
         const event = await client.request<any>(body.api_url)
         await upsertEvent(req.payload, event, options, req)
@@ -34,7 +37,7 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
       const message = error instanceof Error ? error.message : String(error)
       await req.payload.update({ collection: logSlug as any, id: log.id, data: { error: message }, overrideAccess: true, req })
       req.payload.logger.error({ err: error }, 'Eventbrite webhook processing failed')
-      return json({ ok: false, error: message }, 500)
+      return json({ ok: false, error: message }, 400)
     }
   },
 })
