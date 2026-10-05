@@ -21,9 +21,10 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "pack:check": "npm run build && npm pack --dry-run",
+    "pack:check": "npm run exports:check && npm pack --dry-run",
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "exports:check": "npm run build && node -e \"import('./dist/index.js').then(m => { if (!m.eventbritePlugin) process.exit(1) })\""
   },
   "keywords": [
     "payload",
