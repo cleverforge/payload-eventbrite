@@ -18,6 +18,7 @@ import { resolveOrganizerIdForEvent } from './lib/organizers.js'
 
 export * from './types.js'
 export * from './lib/client.js'
+export * from './lib/description.js'
 export * from './lib/normalize.js'
 export * from './lib/oauth.js'
 export * from './lib/tickets.js'
@@ -40,6 +41,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
     storeRaw: false,
     requestTimeoutMs: 15_000,
     requestRetries: 2,
+    renderedDescriptionMode: 'auto',
     ...options,
   }
 
@@ -81,6 +83,9 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
               )
 
           const normalized = normalizeEventbriteEvent(remote, opts.storeRaw === true)
+          const normalizedData = Object.fromEntries(
+            Object.entries(normalized).filter(([, value]) => value !== undefined),
+          )
           const ticket = await syncBasicTicket(client, remote.id, doc, defaults.currency)
           const basicTicket = ticket?.id
             ? { ...(doc.basicTicket || {}), ticketClassId: ticket.id }
@@ -90,7 +95,8 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
             collection: opts.eventsSlug as any,
             id: doc.id,
             data: {
-              ...normalized,
+              ...normalizedData,
+              descriptionHTML: doc.descriptionHTML ?? normalized.descriptionHTML,
               basicTicket,
               syncStatus: 'synced',
               lastSyncedAt: new Date().toISOString(),
