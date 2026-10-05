@@ -7,12 +7,14 @@ import { buildSyncEndpoint } from './endpoints/sync.js'
 import { buildPushEndpoint, buildPublishEndpoint, buildUnpublishEndpoint } from './endpoints/push.js'
 import { buildWebhooksListEndpoint, buildWebhookRegisterEndpoint } from './endpoints/webhooks-admin.js'
 import { getClient } from './endpoints/helpers.js'
-import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from './lib/normalize.js'\nimport { syncBasicTicket } from './lib/tickets.js'
+import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from './lib/normalize.js'
+import { syncBasicTicket } from './lib/tickets.js'
 
 export * from './types.js'
 export * from './lib/client.js'
 export * from './lib/normalize.js'
-export * from './lib/oauth.js'\nexport * from './lib/tickets.js'
+export * from './lib/oauth.js'
+export * from './lib/tickets.js'
 
 export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
   const opts: EventbritePluginOptions = {
@@ -37,17 +39,34 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
     if (outboundAllowed && opts.autoPush) {
       const hook: CollectionAfterChangeHook = async ({ doc, req, context }) => {
         if (context?.eventbriteInbound) return doc
+
         try {
           const client = await getClient(opts, req)
-          const defaults = { currency: opts.defaultCurrency || 'USD', timezone: opts.defaultTimezone || 'America/New_York' }
+          const defaults = {
+            currency: opts.defaultCurrency || 'USD',
+            timezone: opts.defaultTimezone || 'America/New_York',
+          }
+
           const remote = doc.eventbriteId
             ? await client.updateEvent(doc.eventbriteId, toEventbriteUpdatePayload(doc, defaults))
             : await client.createEvent(opts.organizationId, toEventbriteCreatePayload(doc, defaults))
+
           const normalized = normalizeEventbriteEvent(remote, opts.storeRaw !== false)
+          const ticket = await syncBasicTicket(client, remote.id, doc, defaults.currency)
+          const basicTicket = ticket?.id
+            ? { ...(doc.basicTicket || {}), ticketClassId: ticket.id }
+            : doc.basicTicket
+
           await req.payload.update({
             collection: opts.eventsSlug as any,
             id: doc.id,
-            data: { ...normalized, basicTicket, syncStatus: 'synced', lastSyncedAt: new Date().toISOString(), lastSyncError: null } as any,
+            data: {
+              ...normalized,
+              basicTicket,
+              syncStatus: 'synced',
+              lastSyncedAt: new Date().toISOString(),
+              lastSyncError: null,
+            } as any,
             overrideAccess: true,
             req,
             context: { eventbriteInbound: true },
@@ -56,15 +75,23 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
           await req.payload.update({
             collection: opts.eventsSlug as any,
             id: doc.id,
-            data: { syncStatus: 'error', lastSyncError: error instanceof Error ? error.message : String(error) } as any,
+            data: {
+              syncStatus: 'error',
+              lastSyncError: error instanceof Error ? error.message : String(error),
+            } as any,
             overrideAccess: true,
             req,
             context: { eventbriteInbound: true },
           })
         }
+
         return doc
       }
-      events.hooks = { ...(events.hooks || {}), afterChange: [...(events.hooks?.afterChange || []), hook] }
+
+      events.hooks = {
+        ...(events.hooks || {}),
+        afterChange: [...(events.hooks?.afterChange || []), hook],
+      }
     }
 
     return {
