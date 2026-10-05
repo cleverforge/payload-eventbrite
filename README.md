@@ -50,7 +50,7 @@ export default buildConfig({
 })
 ```
 
-Keep Eventbrite tokens server-side. Raw Eventbrite responses are not persisted unless `storeRaw: true` is explicitly enabled.
+Keep Eventbrite tokens server-side. Raw Eventbrite responses are not persisted or API-readable unless `storeRaw: true` is explicitly enabled. Eventbrite-managed identifiers, remote status, sync status, timestamps, ticket-class IDs, and raw response fields are server-managed at Payload field-access level, not only marked read-only in the Admin UI.
 
 `syncDirection` is enforced at plugin-registration time:
 - `eventbrite-to-payload` registers import/webhook endpoints only.
