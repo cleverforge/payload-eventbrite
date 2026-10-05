@@ -19,6 +19,7 @@ test('two-way mode registers inbound and outbound capabilities', () => {
   const config: any = eventbritePlugin({ ...base, syncDirection: 'two-way' })({ collections: [] } as any)
   assert.ok(endpointPaths(config).includes('/eventbrite/webhook'))
   assert.ok(endpointPaths(config).includes('/eventbrite/push/:id'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/webhooks/:id'))
   assert.ok(collectionSlugs(config).includes('eventbrite-webhooks'))
 })
 
@@ -27,6 +28,7 @@ test('inbound-only mode does not expose outbound mutation endpoints', () => {
   const paths = endpointPaths(config)
   assert.ok(paths.includes('/eventbrite/webhook'))
   assert.ok(paths.includes('/eventbrite/sync'))
+  assert.ok(paths.includes('/eventbrite/webhooks/:id'))
   assert.ok(!paths.includes('/eventbrite/push/:id'))
   assert.ok(!paths.includes('/eventbrite/publish/:id'))
   assert.ok(!paths.includes('/eventbrite/unpublish/:id'))
@@ -38,6 +40,7 @@ test('outbound-only mode does not expose webhook or import endpoints', () => {
   assert.ok(paths.includes('/eventbrite/push/:id'))
   assert.ok(!paths.includes('/eventbrite/webhook'))
   assert.ok(!paths.includes('/eventbrite/sync'))
+  assert.ok(!paths.includes('/eventbrite/webhooks/:id'))
   assert.ok(!collectionSlugs(config).includes('eventbrite-webhooks'))
 })
 
