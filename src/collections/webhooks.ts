@@ -1,10 +1,17 @@
 import type { CollectionConfig } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
 
+const authenticated = ({ req }: { req: any }) => Boolean(req.user)
+
 export const buildWebhookLogCollection = (options: EventbritePluginOptions): CollectionConfig => ({
   slug: options.webhookLogSlug || 'eventbrite-webhooks',
   admin: { group: 'Eventbrite', useAsTitle: 'action', defaultColumns: ['action', 'eventbriteWebhookId', 'processed', 'createdAt'] },
-  access: { create: () => false, update: () => false, delete: ({ req }: { req: any }) => Boolean(req.user) },
+  access: {
+    read: authenticated,
+    create: () => false,
+    update: () => false,
+    delete: authenticated,
+  },
   fields: [
     { name: 'action', type: 'text' },
     { name: 'apiURL', type: 'text' },
