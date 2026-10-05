@@ -38,6 +38,8 @@ export interface EventbritePluginOptions {
   autoPush?: boolean
   /** Store raw Eventbrite event responses. Defaults to false for data minimization. */
   storeRaw?: boolean
+  /** Optional shared token added to registered webhook callback URLs and validated on delivery. */
+  webhookToken?: string
   /** Timeout for Eventbrite API requests in milliseconds. Defaults to 15000. */
   requestTimeoutMs?: number
   /** Retries for safe GET requests after transient failures. Defaults to 2. */
