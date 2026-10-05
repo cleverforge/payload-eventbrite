@@ -69,3 +69,52 @@ export async function upsertVenue(
     ? payload.update({ collection: slug as any, id: existing.docs[0].id, data, overrideAccess: true, req })
     : payload.create({ collection: slug as any, data, overrideAccess: true, req })
 }
+
+
+export async function resolveVenueIdForEvent(
+  payload: Payload,
+  doc: Record<string, any>,
+  options: EventbritePluginOptions,
+  req?: PayloadRequest,
+) {
+  if (doc.onlineEvent) return undefined
+  const relationship = doc.venue
+  if (relationship && typeof relationship === 'object' && relationship.venueId) {
+    return String(relationship.venueId)
+  }
+  const relationshipId =
+    typeof relationship === 'string' || typeof relationship === 'number'
+      ? relationship
+      : relationship?.id || relationship?.value?.id || relationship?.value
+  if (relationshipId) {
+    try {
+      const venue: any = await payload.findByID({
+        collection: (options.venuesSlug || 'eventbrite-venues') as any,
+        id: relationshipId,
+        overrideAccess: true,
+        req,
+      })
+      if (venue?.venueId) return String(venue.venueId)
+    } catch {
+      // Fall back to the legacy remote venueId field below.
+    }
+  }
+  return doc.venueId ? String(doc.venueId) : undefined
+}
+
+export async function linkVenueRelationship(
+  payload: Payload,
+  venueId: string | undefined,
+  options: EventbritePluginOptions,
+  req?: PayloadRequest,
+) {
+  if (!venueId) return undefined
+  const result: any = await payload.find({
+    collection: (options.venuesSlug || 'eventbrite-venues') as any,
+    where: { venueId: { equals: venueId } },
+    limit: 1,
+    overrideAccess: true,
+    req,
+  })
+  return result.docs?.[0]?.id
+}
