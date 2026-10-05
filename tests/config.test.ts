@@ -223,3 +223,17 @@ test('host applications can override event-specific public read access', async (
   assert.equal(await events.access.read({ req: { user: undefined } }), false)
   assert.equal(await events.access.read({ req: { user: { canReadEvents: true } } }), true)
 })
+
+
+test('webhook logs inherit the host management access policy', async () => {
+  const config: any = eventbritePlugin({
+    ...base,
+    managementAccess: ({ req }: any) => req.user?.role === 'admin',
+  })({ collections: [] } as any)
+
+  const webhooks = config.collections.find((item: any) => item.slug === 'eventbrite-webhooks')
+  assert.ok(webhooks)
+  assert.equal(await webhooks.access.read({ req: { user: { role: 'staff' } } }), false)
+  assert.equal(await webhooks.access.read({ req: { user: { role: 'admin' } } }), true)
+  assert.equal(await webhooks.access.delete({ req: { user: { role: 'staff' } } }), false)
+})

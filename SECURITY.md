@@ -26,7 +26,7 @@ Webhook resource URLs are restricted to Eventbrite event API URLs to reduce SSRF
 
 ## Webhook authentication
 
-Eventbrite does not document a webhook signature header. For production deployments, configure `webhookToken` and register webhooks through Core so the callback URL includes a private token. Core validates the token using a timing-safe comparison and removes it from stored webhook payload metadata.
+Eventbrite does not document a webhook signature header. For production deployments, configure `webhookToken` and register webhooks through Core so the callback URL includes a private token. Core validates the token using a timing-safe comparison and removes it from stored webhook payload metadata. Invalid tokens are rejected with HTTP 401 before any webhook delivery record is persisted. Malformed JSON is rejected with HTTP 400. Webhook log reads/deletes inherit the host `managementAccess` policy when one is configured.
 
 
 ## Eventbrite-managed field integrity

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Return controlled 401/400 responses for invalid webhook tokens and malformed payloads before persistence.
+- Make webhook delivery logs inherit host `managementAccess` for read/delete operations.
+
 - Restrict anonymous event reads to listed Eventbrite events in public lifecycle states while preserving authenticated management visibility.
 - Add `publicEventReadAccess` for host-defined event visibility policies.
 

@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { buildWebhookEndpoint } from '../src/endpoints/webhook.js'
 import { assertWebhookToken, sanitizeWebhookPayload, withWebhookToken } from '../src/lib/webhook.js'
 
 test('adds webhook token to callback URL without changing existing query params', () => {
@@ -35,4 +36,40 @@ test('sanitizes webhook callback token before payload logging', () => {
 test('webhook token remains optional for backwards-compatible deployments', () => {
   const req: any = { url: 'https://example.org/api/eventbrite/webhook', headers: new Headers() }
   assert.doesNotThrow(() => assertWebhookToken(req))
+})
+
+
+test('webhook endpoint rejects invalid callback tokens before any database write', async () => {
+  let creates = 0
+  const endpoint = buildWebhookEndpoint({ webhookToken: 'expected-token' } as any)
+  const response: Response = await endpoint.handler({
+    url: 'https://example.org/api/eventbrite/webhook?cf_eventbrite_token=wrong-token',
+    headers: new Headers(),
+    json: async () => ({
+      api_url: 'https://www.eventbriteapi.com/v3/events/123/',
+      config: { action: 'event.updated' },
+    }),
+    payload: {
+      create: async () => { creates++; return { id: 'w1' } },
+    },
+  } as any)
+
+  assert.equal(response.status, 401)
+  assert.equal(creates, 0)
+})
+
+test('webhook endpoint rejects malformed JSON payloads before logging them', async () => {
+  let creates = 0
+  const endpoint = buildWebhookEndpoint({ webhookToken: 'expected-token' } as any)
+  const response: Response = await endpoint.handler({
+    url: 'https://example.org/api/eventbrite/webhook?cf_eventbrite_token=expected-token',
+    headers: new Headers(),
+    json: async () => { throw new SyntaxError('bad json') },
+    payload: {
+      create: async () => { creates++; return { id: 'w1' } },
+    },
+  } as any)
+
+  assert.equal(response.status, 400)
+  assert.equal(creates, 0)
 })
