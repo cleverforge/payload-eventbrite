@@ -5,7 +5,7 @@ import { buildWebhookLogCollection } from './collections/webhooks.js'
 import { buildWebhookEndpoint } from './endpoints/webhook.js'
 import { buildSyncEndpoint } from './endpoints/sync.js'
 import { buildPushEndpoint, buildPublishEndpoint, buildUnpublishEndpoint } from './endpoints/push.js'
-import { buildWebhooksListEndpoint, buildWebhookRegisterEndpoint } from './endpoints/webhooks-admin.js'
+import { buildWebhookDeleteEndpoint, buildWebhooksListEndpoint, buildWebhookRegisterEndpoint } from './endpoints/webhooks-admin.js'
 import { getClient, getOrganizationId } from './endpoints/helpers.js'
 import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from './lib/normalize.js'
 import { syncBasicTicket } from './lib/tickets.js'
@@ -122,6 +122,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
           buildSyncEndpoint(opts),
           buildWebhooksListEndpoint(opts),
           buildWebhookRegisterEndpoint(opts),
+          buildWebhookDeleteEndpoint(opts),
         ] : []),
         ...(outboundAllowed ? [
           buildPushEndpoint(opts),
