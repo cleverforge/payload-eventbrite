@@ -10,6 +10,7 @@ export type EventbriteResolverOperation =
   | 'webhook'
   | 'webhook-list'
   | 'webhook-register'
+  | 'webhook-delete'
   | 'auto-push'
 
 export interface EventbriteResolverContext {

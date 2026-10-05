@@ -131,6 +131,10 @@ export class EventbriteClient {
       body: JSON.stringify({ webhook: { endpoint_url: endpointURL, actions } }),
     })
   }
+
+  deleteWebhook(webhookId: string): Promise<{ deleted?: boolean } | undefined> {
+    return this.request(`/webhooks/${encodeURIComponent(webhookId)}/`, { method: 'DELETE' })
+  }
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
