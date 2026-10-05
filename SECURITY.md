@@ -32,3 +32,10 @@ Eventbrite does not document a webhook signature header. For production deployme
 ## Eventbrite-managed field integrity
 
 Remote identifiers, synchronization state, remote status/timestamps, basic-ticket remote IDs, and raw Eventbrite response data are protected with Payload field-level access controls. They cannot be created or changed by normal API clients; synchronization writes use server-side override access.
+
+
+## Collection access defaults
+
+The event, venue, and organizer collections are public-read by default because they represent public event-listing data. Create, update, and delete operations require an authenticated Payload user by default. Deployments with stricter authorization requirements should provide `publicDataReadAccess` and `managementAccess` functions.
+
+Eventbrite-owned IDs, sync metadata, and raw payload fields remain server-managed even for authenticated users.

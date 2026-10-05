@@ -1,4 +1,4 @@
-import type { PayloadRequest } from 'payload'
+import type { Access, PayloadRequest } from 'payload'
 
 export type SyncDirection = 'eventbrite-to-payload' | 'payload-to-eventbrite' | 'two-way'
 
@@ -51,6 +51,10 @@ export interface EventbritePluginOptions {
   requestTimeoutMs?: number
   /** Retries for safe GET requests after transient failures. Defaults to 2. */
   requestRetries?: number
+  /** Read access for public event/venue/organizer collections. Defaults to public read. */
+  publicDataReadAccess?: Access
+  /** Create/update/delete access for event/venue/organizer collections. Defaults to authenticated users. */
+  managementAccess?: Access
   onEventSynced?: (event: NormalizedEventbriteEvent, req?: PayloadRequest) => Promise<void> | void
 }
 

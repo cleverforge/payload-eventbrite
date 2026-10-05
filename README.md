@@ -54,6 +54,8 @@ export default buildConfig({
 
 Keep Eventbrite tokens server-side. Raw Eventbrite responses are not persisted or API-readable unless `storeRaw: true` is explicitly enabled. Eventbrite-managed identifiers, remote status, sync status, timestamps, ticket-class IDs, and raw response fields are server-managed at Payload field-access level, not only marked read-only in the Admin UI.
 
+Core event, venue, and organizer collections default to public read access so they can power public event listings, but create/update/delete require an authenticated Payload user. Hosts can override these defaults with `publicDataReadAccess` and `managementAccess` to enforce application-specific RBAC.
+
 `syncDirection` is enforced at plugin-registration time:
 - `eventbrite-to-payload` registers import/webhook endpoints only.
 - `payload-to-eventbrite` registers push/publish endpoints only.
