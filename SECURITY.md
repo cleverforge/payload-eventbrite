@@ -36,7 +36,7 @@ Remote identifiers, synchronization state, remote status/timestamps, basic-ticke
 
 ## Collection access defaults
 
-The event, venue, and organizer collections are public-read by default because they represent public event-listing data. Create, update, and delete operations require an authenticated Payload user by default. Deployments with stricter authorization requirements should provide `publicDataReadAccess` and `managementAccess` functions.
+Venue and organizer collections are public-read by default. Event reads are filtered for anonymous users to listed events in public Eventbrite states; draft, canceled, unlisted, and local-only records are hidden by default. Authenticated users can read all event records. Deployments can replace this policy with `publicEventReadAccess`, `publicDataReadAccess`, and `managementAccess` functions.
 
 Eventbrite-owned IDs, sync metadata, and raw payload fields remain server-managed even for authenticated users.
 
