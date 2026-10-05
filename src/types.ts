@@ -1,6 +1,7 @@
 import type { Access, PayloadRequest } from 'payload'
 
 export type SyncDirection = 'eventbrite-to-payload' | 'payload-to-eventbrite' | 'two-way'
+export type RenderedDescriptionMode = 'auto' | 'always' | 'never'
 
 export type EventbriteResolverOperation =
   | 'sync'
@@ -51,6 +52,8 @@ export interface EventbritePluginOptions {
   requestTimeoutMs?: number
   /** Retries for safe GET requests after transient failures. Defaults to 2. */
   requestRetries?: number
+  /** Retrieve Eventbrite's current rendered description endpoint. Defaults to auto. */
+  renderedDescriptionMode?: RenderedDescriptionMode
   /** Read access for public venue/organizer collections and fallback event reads. Defaults to public read. */
   publicDataReadAccess?: Access
   /** Event-specific read access. Defaults to authenticated full read and anonymous listed/public-state events only. */
@@ -151,6 +154,8 @@ export interface NormalizedEventbriteEvent {
   title: string
   summary?: string
   descriptionHTML?: string
+  /** Fully rendered Eventbrite listing HTML retrieved from /events/{id}/description/. */
+  renderedDescriptionHTML?: string
   eventbriteURL?: string
   startAt?: string
   endAt?: string
