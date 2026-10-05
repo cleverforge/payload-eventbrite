@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add idempotent remote-event synchronization coverage against a real Payload SQLite database.
+- Harden GitHub Actions permissions, concurrency, and timeouts; add weekly Dependabot updates.
+
 - Update repository metadata after transfer to CleverForgeAi.
 - Default raw Eventbrite event response storage to off.
 - Enforce configured inbound/outbound sync direction when registering endpoints and webhook storage.
