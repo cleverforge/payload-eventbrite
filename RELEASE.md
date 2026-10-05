@@ -32,6 +32,15 @@ Each job must pass:
    ```
 10. Do not promote the beta to `latest` until live Payload + Eventbrite acceptance tests pass.
 
+## Live acceptance gate
+
+Before promoting a beta toward stable, configure a dedicated Eventbrite test organization and run both manual workflows:
+
+1. **Live Eventbrite smoke test** for read-only API coverage.
+2. **Live Eventbrite write acceptance** using the exact confirmation phrase `CREATE_PUBLISH_UNPUBLISH_DELETE_TEST_EVENT`.
+
+The write workflow must complete create -> ticket -> publish -> unpublish -> delete successfully. It uses an unlisted future event and attempts cleanup even when the test fails.
+
 ## Stable release gate
 
 A stable release additionally requires real runtime validation against:
