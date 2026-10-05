@@ -36,7 +36,12 @@ export interface EventbritePluginOptions {
   defaultCurrency?: string
   defaultTimezone?: string
   autoPush?: boolean
+  /** Store raw Eventbrite event responses. Defaults to false for data minimization. */
   storeRaw?: boolean
+  /** Timeout for Eventbrite API requests in milliseconds. Defaults to 15000. */
+  requestTimeoutMs?: number
+  /** Retries for safe GET requests after transient failures. Defaults to 2. */
+  requestRetries?: number
   onEventSynced?: (event: NormalizedEventbriteEvent, req?: PayloadRequest) => Promise<void> | void
 }
 
