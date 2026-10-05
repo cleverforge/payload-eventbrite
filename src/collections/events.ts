@@ -25,7 +25,13 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
     { name: 'listed', type: 'checkbox', defaultValue: true },
     { name: 'capacity', type: 'number', min: 0 },
     { name: 'currency', type: 'text', defaultValue: options.defaultCurrency || 'USD' },
-    { name: 'venueId', type: 'text', admin: { description: 'Existing Eventbrite venue ID. Leave blank for online events.' } },
+    {
+      name: 'venue',
+      type: 'relationship',
+      relationTo: options.venuesSlug || 'eventbrite-venues',
+      admin: { description: 'Select a synchronized Eventbrite venue. The legacy venueId field remains supported.' },
+    },
+    { name: 'venueId', type: 'text', admin: { description: 'Legacy/direct Eventbrite venue ID. A selected venue relationship takes precedence.' } },
     { name: 'organizerId', type: 'text', admin: { description: 'Existing Eventbrite organizer ID used when publishing.' } },
     {
       name: 'basicTicket',
