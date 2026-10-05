@@ -12,6 +12,7 @@ Standalone open-source Eventbrite integration for Payload CMS. It does **not** d
 - Basic free or paid ticket-class creation/update
 - Existing Eventbrite organizer assignment
 - Eventbrite venue collection, organization sync, create/update, and event relationship selection
+- Eventbrite organizer collection, organization sync, create, and event relationship selection
 - OAuth authorization-code helpers
 - Private-token or request-aware token resolver
 - Manual or automatic outbound synchronization
@@ -68,14 +69,22 @@ Events expose a Payload relationship named `venueRecord`. When selected, Core re
 
 Eventbrite requires the first address line and a two-letter ISO country code for addresses. Core validates those fields before a venue mutation is sent.
 
+## Organizers
+
+Core includes an `eventbrite-organizers` collection. Authenticated users can import organizers for the configured Eventbrite organization or create a new local organizer and push it to Eventbrite.
+
+Events expose an `organizerRecord` relationship. When selected, Core resolves the related organizer's Eventbrite ID during push and auto-push. The existing `organizerId` field remains supported for direct-ID and backwards-compatible workflows.
+
+Core intentionally treats already-linked organizer profiles as read-only for outbound organizer editing. Eventbrite's current public Organization API documents organization-scoped organizer listing and creation, while a general organizer update operation is not part of the current documented Organization migration contract. Edit an existing organizer in Eventbrite and run organizer sync.
+
 ## Event fields required for publication
 
 Eventbrite publication requires a sufficiently complete event. Core supports the minimum workflow:
 
 1. Create or import a Payload event.
 2. Add a description.
-3. Set an existing Eventbrite organizer ID.
-4. For an in-person event, optionally set an existing Eventbrite venue ID.
+3. Select a synchronized organizer record or set an existing Eventbrite organizer ID.
+4. For an in-person event, select a synchronized venue record or set an existing Eventbrite venue ID.
 5. Configure the Basic Ticket group:
    - ticket name
    - quantity
@@ -100,6 +109,8 @@ Assuming Payload's standard `/api` prefix:
 - `DELETE /api/eventbrite/webhooks/:id`
 - `POST /api/eventbrite/venues/sync`
 - `POST /api/eventbrite/venues/push/:id`
+- `POST /api/eventbrite/organizers/sync`
+- `POST /api/eventbrite/organizers/push/:id`
 
 All management endpoints require an authenticated Payload user. The Eventbrite webhook endpoint is public because Eventbrite must call it.
 
@@ -165,7 +176,7 @@ npm run pack:check
 
 The integration suite boots a real Payload instance, installs the plugin, creates an event through Payload's Local API, reads it back, and destroys the test database.
 
-For an optional read-only test against a real Eventbrite account, configure GitHub Actions secrets `EVENTBRITE_PRIVATE_TOKEN` and `EVENTBRITE_ORGANIZATION_ID`, then run **Live Eventbrite smoke test**. It reads the authenticated user, event list, webhooks, and a sample ticket list without creating or modifying Eventbrite data.
+For an optional read-only test against a real Eventbrite account, configure GitHub Actions secrets `EVENTBRITE_PRIVATE_TOKEN` and `EVENTBRITE_ORGANIZATION_ID`, then run **Live Eventbrite smoke test**. It reads the authenticated user, events, webhooks, venues, organizers, and a sample ticket list without creating or modifying Eventbrite data.
 
 CI runs against Node 20 and Node 22.
 

@@ -32,7 +32,13 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
       admin: { description: 'Select a synchronized Eventbrite venue record. The legacy venueId field remains supported.' },
     },
     { name: 'venueId', type: 'text', admin: { description: 'Legacy/direct Eventbrite venue ID. A selected venue relationship takes precedence.' } },
-    { name: 'organizerId', type: 'text', admin: { description: 'Existing Eventbrite organizer ID used when publishing.' } },
+    {
+      name: 'organizerRecord',
+      type: 'relationship',
+      relationTo: options.organizersSlug || 'eventbrite-organizers',
+      admin: { description: 'Select a synchronized Eventbrite organizer. The legacy organizerId field remains supported.' },
+    },
+    { name: 'organizerId', type: 'text', admin: { description: 'Legacy/direct Eventbrite organizer ID. A selected organizer relationship takes precedence.' } },
     {
       name: 'basicTicket',
       type: 'group',

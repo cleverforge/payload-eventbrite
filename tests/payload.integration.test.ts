@@ -6,6 +6,7 @@ import { getPayload } from 'payload'
 import { createDevConfig } from '../dev/config.js'
 import { upsertEvent } from '../src/lib/upsert.js'
 import { upsertVenue } from '../src/lib/venues.js'
+import { upsertOrganizer } from '../src/lib/organizers.js'
 
 async function cleanupDatabase(databasePath: string) {
   await rm(databasePath, { force: true }).catch(() => undefined)
@@ -22,6 +23,7 @@ test('Core boots and synchronizes Eventbrite events idempotently in a real Paylo
     assert.ok(payload.collections['eventbrite-events'])
     assert.ok(payload.collections['eventbrite-webhooks'])
     assert.ok(payload.collections['eventbrite-venues'])
+    assert.ok(payload.collections['eventbrite-organizers'])
 
     const created: any = await payload.create({
       collection: 'eventbrite-events' as any,
@@ -84,6 +86,31 @@ test('Core boots and synchronizes Eventbrite events idempotently in a real Paylo
     assert.equal(venueAgain.id, venue.id)
     assert.equal(venueAgain.name, 'Integration Hall Updated')
 
+    const organizer: any = await upsertOrganizer(payload, {
+      id: 'organizer-integration-1',
+      name: 'Integration Organizer',
+      description: { html: '<p>Organizer description</p>' },
+      num_past_events: 2,
+      num_future_events: 4,
+    }, {
+      organizersSlug: 'eventbrite-organizers',
+      storeRaw: false,
+    })
+
+    const organizerAgain: any = await upsertOrganizer(payload, {
+      id: 'organizer-integration-1',
+      name: 'Integration Organizer Updated',
+      description: { html: '<p>Organizer description updated</p>' },
+      num_past_events: 3,
+      num_future_events: 5,
+    }, {
+      organizersSlug: 'eventbrite-organizers',
+      storeRaw: false,
+    })
+
+    assert.equal(organizerAgain.id, organizer.id)
+    assert.equal(organizerAgain.name, 'Integration Organizer Updated')
+
     const baseEvent: any = {
       id: 'evt-integration-1',
       name: { text: 'Remote Event v1' },
@@ -101,6 +128,7 @@ test('Core boots and synchronizes Eventbrite events idempotently in a real Paylo
       online_event: false,
       listed: true,
       venue_id: 'venue-integration-1',
+      organizer_id: 'organizer-integration-1',
       changed: '2026-10-05T17:00:00Z',
     }
 
@@ -114,6 +142,11 @@ test('Core boots and synchronizes Eventbrite events idempotently in a real Paylo
         ? first.venueRecord.id ?? first.venueRecord.value?.id ?? first.venueRecord.value
         : first.venueRecord
     assert.equal(Number(linkedVenue), Number(venue.id))
+    const linkedOrganizer =
+      first.organizerRecord && typeof first.organizerRecord === 'object'
+        ? first.organizerRecord.id ?? first.organizerRecord.value?.id ?? first.organizerRecord.value
+        : first.organizerRecord
+    assert.equal(Number(linkedOrganizer), Number(organizer.id))
 
     const second: any = await upsertEvent(payload, {
       ...baseEvent,
@@ -132,12 +165,20 @@ test('Core boots and synchronizes Eventbrite events idempotently in a real Paylo
       limit: 10,
     })
 
+    const organizers: any = await payload.find({
+      collection: 'eventbrite-organizers' as any,
+      where: { organizerId: { equals: 'organizer-integration-1' } },
+      limit: 10,
+    })
+
     const venues: any = await payload.find({
       collection: 'eventbrite-venues' as any,
       where: { venueId: { equals: 'venue-integration-1' } },
       limit: 10,
     })
 
+    assert.equal(organizers.totalDocs, 1)
+    assert.equal(organizers.docs[0]?.name, 'Integration Organizer Updated')
     assert.equal(venues.totalDocs, 1)
     assert.equal(venues.docs[0]?.capacity, 300)
     assert.equal(result.totalDocs, 1)

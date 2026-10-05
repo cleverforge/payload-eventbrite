@@ -4,6 +4,7 @@ import { getClient, getOrganizationId, json, requireUser } from './helpers.js'
 import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from '../lib/normalize.js'
 import { assertPublishReady, syncBasicTicket } from '../lib/tickets.js'
 import { resolveVenueIdForEvent } from '../lib/venues.js'
+import { resolveOrganizerIdForEvent } from '../lib/organizers.js'
 
 export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint => ({
   path: '/eventbrite/push/:id',
@@ -20,6 +21,7 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
       const outboundDoc = {
         ...doc,
         venueId: await resolveVenueIdForEvent(req.payload, doc, options, req),
+        organizerId: await resolveOrganizerIdForEvent(req.payload, doc, options, req),
       }
       const event = doc.eventbriteId
         ? await client.updateEvent(doc.eventbriteId, toEventbriteUpdatePayload(outboundDoc, defaults))
@@ -28,7 +30,7 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
             toEventbriteCreatePayload(outboundDoc, defaults),
           )
 
-      const normalized = normalizeEventbriteEvent(event, options.storeRaw !== false)
+      const normalized = normalizeEventbriteEvent(event, options.storeRaw === true)
       const ticket = await syncBasicTicket(client, event.id, doc, defaults.currency)
       const basicTicket = ticket?.id
         ? { ...(doc.basicTicket || {}), ticketClassId: ticket.id }

@@ -1,4 +1,4 @@
-import type { EventbriteEvent, EventbriteTicketClass, EventbriteVenue } from '../types.js'
+import type { EventbriteEvent, EventbriteOrganizer, EventbriteTicketClass, EventbriteVenue } from '../types.js'
 
 const API_BASE = 'https://www.eventbriteapi.com/v3'
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504])
@@ -156,6 +156,27 @@ export class EventbriteClient {
 
   updateVenue(venueId: string, payload: unknown): Promise<EventbriteVenue> {
     return this.request(`/venues/${encodeURIComponent(venueId)}/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  listOrganizationOrganizers(
+    organizationId: string,
+    continuation?: string,
+  ): Promise<{ organizers?: EventbriteOrganizer[]; pagination?: { continuation?: string } }> {
+    const params = new URLSearchParams()
+    if (continuation) params.set('continuation', continuation)
+    const query = params.toString()
+    return this.request(`/organizations/${encodeURIComponent(organizationId)}/organizers/${query ? `?${query}` : ''}`)
+  }
+
+  getOrganizer(organizerId: string): Promise<EventbriteOrganizer> {
+    return this.request(`/organizers/${encodeURIComponent(organizerId)}/`)
+  }
+
+  createOrganizer(organizationId: string, payload: unknown): Promise<EventbriteOrganizer> {
+    return this.request(`/organizations/${encodeURIComponent(organizationId)}/organizers/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })

@@ -22,7 +22,7 @@ Purpose: synchronize and publish event records between Payload CMS and Eventbrit
 
 ### Core additions before stable v1
 - [x] Venue synchronization and venue creation
-- [ ] Organizer synchronization and selection
+- [x] Organizer synchronization, creation, and selection
 - Basic Ticket Class synchronization and creation
   - free ticket
   - paid ticket

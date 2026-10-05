@@ -51,3 +51,15 @@ test('publish readiness requires description, organizer and ticket', () => {
   assert.doesNotThrow(() => assertPublishReady({ description: { html: '<p>x</p>' }, organizer_id: '1' }, [{ id: 't1' }]))
   assert.throws(() => assertPublishReady({ description: { html: '<p>x</p>' } }, []), /organizer.*ticket class/)
 })
+
+
+test('event normalization omits raw Eventbrite data by default', () => {
+  const event = normalizeEventbriteEvent({ id: 'privacy-1', name: { text: 'Privacy Test' } })
+  assert.equal(event.raw, undefined)
+})
+
+test('event normalization stores raw Eventbrite data only when explicitly enabled', () => {
+  const source = { id: 'privacy-2', name: { text: 'Privacy Test' } }
+  const event = normalizeEventbriteEvent(source, true)
+  assert.equal(event.raw?.id, 'privacy-2')
+})

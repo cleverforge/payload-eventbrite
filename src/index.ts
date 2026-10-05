@@ -2,16 +2,19 @@ import type { CollectionAfterChangeHook, Config, Plugin } from 'payload'
 import type { EventbritePluginOptions } from './types.js'
 import { buildEventsCollection } from './collections/events.js'
 import { buildVenuesCollection } from './collections/venues.js'
+import { buildOrganizersCollection } from './collections/organizers.js'
 import { buildWebhookLogCollection } from './collections/webhooks.js'
 import { buildWebhookEndpoint } from './endpoints/webhook.js'
 import { buildSyncEndpoint } from './endpoints/sync.js'
 import { buildPushEndpoint, buildPublishEndpoint, buildUnpublishEndpoint } from './endpoints/push.js'
 import { buildWebhookDeleteEndpoint, buildWebhooksListEndpoint, buildWebhookRegisterEndpoint } from './endpoints/webhooks-admin.js'
 import { buildVenuePushEndpoint, buildVenueSyncEndpoint } from './endpoints/venues.js'
+import { buildOrganizerPushEndpoint, buildOrganizerSyncEndpoint } from './endpoints/organizers.js'
 import { getClient, getOrganizationId } from './endpoints/helpers.js'
 import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from './lib/normalize.js'
 import { syncBasicTicket } from './lib/tickets.js'
 import { resolveVenueIdForEvent } from './lib/venues.js'
+import { resolveOrganizerIdForEvent } from './lib/organizers.js'
 
 export * from './types.js'
 export * from './lib/client.js'
@@ -21,6 +24,7 @@ export * from './lib/tickets.js'
 export * from './lib/upsert.js'
 export * from './lib/webhook.js'
 export * from './lib/venues.js'
+export * from './lib/organizers.js'
 
 export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
   const opts: EventbritePluginOptions = {
@@ -29,6 +33,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
     eventsSlug: 'eventbrite-events',
     webhookLogSlug: 'eventbrite-webhooks',
     venuesSlug: 'eventbrite-venues',
+    organizersSlug: 'eventbrite-organizers',
     defaultCurrency: 'USD',
     defaultTimezone: 'America/New_York',
     autoPush: false,
@@ -66,6 +71,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
           const outboundDoc = {
             ...doc,
             venueId: await resolveVenueIdForEvent(req.payload, doc, opts, req),
+            organizerId: await resolveOrganizerIdForEvent(req.payload, doc, opts, req),
           }
           const remote = doc.eventbriteId
             ? await client.updateEvent(doc.eventbriteId, toEventbriteUpdatePayload(outboundDoc, defaults))
@@ -123,6 +129,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
         ...(incomingConfig.collections || []),
         events,
         buildVenuesCollection(opts),
+        buildOrganizersCollection(opts),
         ...(inboundAllowed ? [buildWebhookLogCollection(opts)] : []),
       ],
       endpoints: [
@@ -134,12 +141,14 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
           buildWebhookRegisterEndpoint(opts),
           buildWebhookDeleteEndpoint(opts),
           buildVenueSyncEndpoint(opts),
+          buildOrganizerSyncEndpoint(opts),
         ] : []),
         ...(outboundAllowed ? [
           buildPushEndpoint(opts),
           buildPublishEndpoint(opts),
           buildUnpublishEndpoint(opts),
           buildVenuePushEndpoint(opts),
+          buildOrganizerPushEndpoint(opts),
         ] : []),
       ],
     }
