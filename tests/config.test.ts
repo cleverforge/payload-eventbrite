@@ -47,3 +47,44 @@ test('raw Eventbrite response storage is opt-in', () => {
   const raw = events.fields.find((field: any) => field.name === 'raw')
   assert.equal(raw.admin.condition(), false)
 })
+
+
+test('Eventbrite-owned fields are server-managed through field access', async () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+
+  for (const name of [
+    'eventbriteId',
+    'eventbriteURL',
+    'status',
+    'syncStatus',
+    'lastSyncedAt',
+    'lastSyncError',
+    'eventbriteChangedAt',
+    'eventbritePublishedAt',
+  ]) {
+    const field = events.fields.find((item: any) => item?.name === name)
+    assert.ok(field, `Expected field ${name}`)
+    assert.equal(await field.access.create({ req: { user: { id: 'u1' } } }), false)
+    assert.equal(await field.access.update({ req: { user: { id: 'u1' } } }), false)
+  }
+
+  const ticketGroup = events.fields.find((item: any) => item?.name === 'basicTicket')
+  const ticketClassId = ticketGroup.fields.find((item: any) => item?.name === 'ticketClassId')
+  assert.equal(await ticketClassId.access.create({ req: { user: { id: 'u1' } } }), false)
+  assert.equal(await ticketClassId.access.update({ req: { user: { id: 'u1' } } }), false)
+})
+
+test('raw Eventbrite responses are unreadable unless explicitly enabled', async () => {
+  const disabled: any = eventbritePlugin(base)({ collections: [] } as any)
+  const disabledEvents = disabled.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const disabledRaw = disabledEvents.fields.find((field: any) => field.name === 'raw')
+  assert.equal(await disabledRaw.access.read({ req: { user: { id: 'u1' } } }), false)
+
+  const enabled: any = eventbritePlugin({ ...base, storeRaw: true })({ collections: [] } as any)
+  const enabledEvents = enabled.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const enabledRaw = enabledEvents.fields.find((field: any) => field.name === 'raw')
+  assert.equal(await enabledRaw.access.read({ req: { user: { id: 'u1' } } }), true)
+  assert.equal(await enabledRaw.access.create({ req: { user: { id: 'u1' } } }), false)
+  assert.equal(await enabledRaw.access.update({ req: { user: { id: 'u1' } } }), false)
+})
