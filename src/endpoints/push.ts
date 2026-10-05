@@ -1,6 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
-import { getClient, getOrganizationId, json, requireUser } from './helpers.js'
+import { errorResponse, getClient, getOrganizationId, json, requireManagement } from './helpers.js'
 import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from '../lib/normalize.js'
 import { assertPublishReady, syncBasicTicket } from '../lib/tickets.js'
 import { resolveVenueIdForEvent } from '../lib/venues.js'
@@ -11,7 +11,7 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const slug = options.eventsSlug || 'eventbrite-events'
       const id = req.routeParams?.id as string
       const doc: any = await req.payload.findByID({ collection: slug as any, id, overrideAccess: false, req })
@@ -52,7 +52,7 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
       })
       return json({ ok: true, event: updated })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })
@@ -62,7 +62,7 @@ export const buildPublishEndpoint = (options: EventbritePluginOptions): Endpoint
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const slug = options.eventsSlug || 'eventbrite-events'
       const id = req.routeParams?.id as string
       const doc: any = await req.payload.findByID({ collection: slug as any, id, req })
@@ -86,7 +86,7 @@ export const buildPublishEndpoint = (options: EventbritePluginOptions): Endpoint
       })
       return json({ ok: true, result })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })
@@ -96,7 +96,7 @@ export const buildUnpublishEndpoint = (options: EventbritePluginOptions): Endpoi
   method: 'post',
   handler: async (req: PayloadRequest) => {
     try {
-      requireUser(req)
+      await requireManagement(options, req)
       const slug = options.eventsSlug || 'eventbrite-events'
       const id = req.routeParams?.id as string
       const doc: any = await req.payload.findByID({ collection: slug as any, id, req })
@@ -113,7 +113,7 @@ export const buildUnpublishEndpoint = (options: EventbritePluginOptions): Endpoi
       })
       return json({ ok: true, result })
     } catch (error) {
-      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400)
+      return errorResponse(error)
     }
   },
 })
