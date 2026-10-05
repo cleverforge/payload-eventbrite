@@ -116,7 +116,7 @@ Assuming Payload's standard `/api` prefix:
 - `POST /api/eventbrite/organizers/sync`
 - `POST /api/eventbrite/organizers/push/:id`
 
-All management endpoints require an authenticated Payload user. The Eventbrite webhook endpoint is public because Eventbrite must call it.
+All management endpoints require an authenticated Payload user. Webhook logs inherit the host `managementAccess` policy. The Eventbrite webhook endpoint itself is public because Eventbrite must call it. When `webhookToken` is configured, invalid callback tokens return HTTP 401 before any webhook log is written; malformed JSON returns HTTP 400.
 
 ## Webhook security
 
