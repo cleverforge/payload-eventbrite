@@ -2,6 +2,7 @@ import type { Payload, PayloadRequest } from 'payload'
 import type { EventbriteEvent, EventbritePluginOptions } from '../types.js'
 import { normalizeEventbriteEvent } from './normalize.js'
 import { linkVenueRelationship } from './venues.js'
+import { linkOrganizerRelationship } from './organizers.js'
 
 export async function upsertEvent(payload: Payload, event: EventbriteEvent, options: EventbritePluginOptions, req?: PayloadRequest) {
   const slug = options.eventsSlug || 'eventbrite-events'
@@ -14,10 +15,14 @@ export async function upsertEvent(payload: Payload, event: EventbriteEvent, opti
     req,
   })
 
-  const venue = await linkVenueRelationship(payload, normalized.venueId, options, req)
+  const [venue, organizer] = await Promise.all([
+    linkVenueRelationship(payload, normalized.venueId, options, req),
+    linkOrganizerRelationship(payload, normalized.organizerId, options, req),
+  ])
   const data: any = {
     ...normalized,
     ...(venue ? { venueRecord: venue } : {}),
+    ...(organizer ? { organizerRecord: organizer } : {}),
     syncStatus: 'synced',
     lastSyncedAt: new Date().toISOString(),
     lastSyncError: null,
