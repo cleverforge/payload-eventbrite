@@ -33,7 +33,10 @@ export async function getClient(
   req?: PayloadRequest,
   context?: EventbriteResolverContext,
 ) {
-  return new EventbriteClient(await getAccessToken(options, req, context))
+  return new EventbriteClient(await getAccessToken(options, req, context), {
+    timeoutMs: options.requestTimeoutMs,
+    retries: options.requestRetries,
+  })
 }
 
 export function json(data: unknown, status = 200) {
