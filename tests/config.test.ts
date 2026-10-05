@@ -1,0 +1,49 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { eventbritePlugin } from '../src/index.js'
+
+const base = {
+  organizationId: 'org-1',
+  accessToken: 'token-1',
+}
+
+function endpointPaths(config: any) {
+  return (config.endpoints || []).map((endpoint: any) => endpoint.path)
+}
+
+function collectionSlugs(config: any) {
+  return (config.collections || []).map((collection: any) => collection.slug)
+}
+
+test('two-way mode registers inbound and outbound capabilities', () => {
+  const config: any = eventbritePlugin({ ...base, syncDirection: 'two-way' })({ collections: [] } as any)
+  assert.ok(endpointPaths(config).includes('/eventbrite/webhook'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/push/:id'))
+  assert.ok(collectionSlugs(config).includes('eventbrite-webhooks'))
+})
+
+test('inbound-only mode does not expose outbound mutation endpoints', () => {
+  const config: any = eventbritePlugin({ ...base, syncDirection: 'eventbrite-to-payload' })({ collections: [] } as any)
+  const paths = endpointPaths(config)
+  assert.ok(paths.includes('/eventbrite/webhook'))
+  assert.ok(paths.includes('/eventbrite/sync'))
+  assert.ok(!paths.includes('/eventbrite/push/:id'))
+  assert.ok(!paths.includes('/eventbrite/publish/:id'))
+  assert.ok(!paths.includes('/eventbrite/unpublish/:id'))
+})
+
+test('outbound-only mode does not expose webhook or import endpoints', () => {
+  const config: any = eventbritePlugin({ ...base, syncDirection: 'payload-to-eventbrite' })({ collections: [] } as any)
+  const paths = endpointPaths(config)
+  assert.ok(paths.includes('/eventbrite/push/:id'))
+  assert.ok(!paths.includes('/eventbrite/webhook'))
+  assert.ok(!paths.includes('/eventbrite/sync'))
+  assert.ok(!collectionSlugs(config).includes('eventbrite-webhooks'))
+})
+
+test('raw Eventbrite response storage is opt-in', () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const raw = events.fields.find((field: any) => field.name === 'raw')
+  assert.equal(raw.admin.condition(), false)
+})
