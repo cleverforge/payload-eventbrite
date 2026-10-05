@@ -64,7 +64,7 @@ Core retries only safe GET/HEAD requests after transient network/429/5xx failure
 
 Core includes an `eventbrite-venues` collection. Authenticated users can import the configured organization's venues, create a local venue and push it to Eventbrite, or update an already-linked venue.
 
-Events expose a Payload relationship named `venue`. When selected, Core resolves the related venue's Eventbrite ID during push/auto-push. The existing `venueId` text field remains supported for backwards compatibility and direct-ID workflows.
+Events expose a Payload relationship named `venueRecord`. When selected, Core resolves the related venue's Eventbrite ID during push/auto-push. The existing `venueId` text field remains supported for backwards compatibility and direct-ID workflows.
 
 Eventbrite requires the first address line and a two-letter ISO country code for addresses. Core validates those fields before a venue mutation is sent.
 
