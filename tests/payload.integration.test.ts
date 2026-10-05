@@ -16,7 +16,7 @@ async function cleanupDatabase(databasePath: string) {
 
 async function destroyPayload(payload: any) {
   if (typeof payload.destroy === 'function') {
-    await destroyPayload(payload)
+    await payload.destroy()
     return
   }
   if (typeof payload.db?.destroy === 'function') {
