@@ -4,11 +4,18 @@ import { rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { getPayload } from 'payload'
 import { createDevConfig } from '../dev/config.js'
+import { upsertEvent } from '../src/lib/upsert.js'
+
+async function cleanupDatabase(databasePath: string) {
+  await rm(databasePath, { force: true }).catch(() => undefined)
+  await rm(`${databasePath}-shm`, { force: true }).catch(() => undefined)
+  await rm(`${databasePath}-wal`, { force: true }).catch(() => undefined)
+}
 
 test('plugin boots in a real Payload SQLite instance and persists events', async () => {
-  const databasePath = resolve(process.cwd(), `.tmp-payload-eventbrite-${process.pid}.db`)
+  const databasePath = resolve(process.cwd(), `.tmp-payload-eventbrite-${process.pid}-boot.db`)
   const config = createDevConfig(`file:${databasePath}`)
-  const payload = await getPayload({ config, key: `payload-eventbrite-${process.pid}` })
+  const payload = await getPayload({ config, key: `payload-eventbrite-${process.pid}-boot` })
 
   try {
     assert.ok(payload.collections['eventbrite-events'])
@@ -36,8 +43,68 @@ test('plugin boots in a real Payload SQLite instance and persists events', async
     assert.equal(found.raw, null)
   } finally {
     await payload.destroy()
-    await rm(databasePath, { force: true }).catch(() => undefined)
-    await rm(`${databasePath}-shm`, { force: true }).catch(() => undefined)
-    await rm(`${databasePath}-wal`, { force: true }).catch(() => undefined)
+    await cleanupDatabase(databasePath)
+  }
+})
+
+test('Eventbrite event synchronization is idempotent in a real Payload database', async () => {
+  const databasePath = resolve(process.cwd(), `.tmp-payload-eventbrite-${process.pid}-sync.db`)
+  const config = createDevConfig(`file:${databasePath}`)
+  const payload = await getPayload({ config, key: `payload-eventbrite-${process.pid}-sync` })
+
+  try {
+    const options: any = {
+      eventsSlug: 'eventbrite-events',
+      storeRaw: false,
+    }
+
+    const baseEvent: any = {
+      id: 'evt-integration-1',
+      name: { text: 'Remote Event v1' },
+      description: { html: '<p>Remote description</p>' },
+      start: {
+        utc: '2026-11-05T15:00:00Z',
+        timezone: 'America/New_York',
+      },
+      end: {
+        utc: '2026-11-05T17:00:00Z',
+        timezone: 'America/New_York',
+      },
+      status: 'draft',
+      currency: 'USD',
+      online_event: false,
+      listed: true,
+      changed: '2026-10-05T17:00:00Z',
+    }
+
+    const first: any = await upsertEvent(payload, baseEvent, options)
+    assert.equal(first.eventbriteId, 'evt-integration-1')
+    assert.equal(first.title, 'Remote Event v1')
+    assert.equal(first.syncStatus, 'synced')
+    assert.equal(first.raw, null)
+
+    const second: any = await upsertEvent(payload, {
+      ...baseEvent,
+      name: { text: 'Remote Event v2' },
+      status: 'live',
+      changed: '2026-10-05T18:00:00Z',
+    }, options)
+
+    assert.equal(second.id, first.id)
+    assert.equal(second.title, 'Remote Event v2')
+    assert.equal(second.status, 'live')
+
+    const result: any = await payload.find({
+      collection: 'eventbrite-events' as any,
+      where: { eventbriteId: { equals: 'evt-integration-1' } },
+      limit: 10,
+    })
+
+    assert.equal(result.totalDocs, 1)
+    assert.equal(result.docs[0]?.title, 'Remote Event v2')
+    assert.equal(result.docs[0]?.raw, null)
+  } finally {
+    await payload.destroy()
+    await cleanupDatabase(databasePath)
   }
 })
