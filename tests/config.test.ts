@@ -22,8 +22,11 @@ test('two-way mode registers inbound and outbound capabilities', () => {
   assert.ok(endpointPaths(config).includes('/eventbrite/webhooks/:id'))
   assert.ok(endpointPaths(config).includes('/eventbrite/venues/sync'))
   assert.ok(endpointPaths(config).includes('/eventbrite/venues/push/:id'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/organizers/sync'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/organizers/push/:id'))
   assert.ok(collectionSlugs(config).includes('eventbrite-webhooks'))
   assert.ok(collectionSlugs(config).includes('eventbrite-venues'))
+  assert.ok(collectionSlugs(config).includes('eventbrite-organizers'))
 })
 
 test('inbound-only mode does not expose outbound mutation endpoints', () => {
@@ -33,7 +36,9 @@ test('inbound-only mode does not expose outbound mutation endpoints', () => {
   assert.ok(paths.includes('/eventbrite/sync'))
   assert.ok(paths.includes('/eventbrite/webhooks/:id'))
   assert.ok(paths.includes('/eventbrite/venues/sync'))
+  assert.ok(paths.includes('/eventbrite/organizers/sync'))
   assert.ok(!paths.includes('/eventbrite/venues/push/:id'))
+  assert.ok(!paths.includes('/eventbrite/organizers/push/:id'))
   assert.ok(!paths.includes('/eventbrite/push/:id'))
   assert.ok(!paths.includes('/eventbrite/publish/:id'))
   assert.ok(!paths.includes('/eventbrite/unpublish/:id'))
@@ -47,7 +52,9 @@ test('outbound-only mode does not expose webhook or import endpoints', () => {
   assert.ok(!paths.includes('/eventbrite/sync'))
   assert.ok(!paths.includes('/eventbrite/webhooks/:id'))
   assert.ok(!paths.includes('/eventbrite/venues/sync'))
+  assert.ok(!paths.includes('/eventbrite/organizers/sync'))
   assert.ok(paths.includes('/eventbrite/venues/push/:id'))
+  assert.ok(paths.includes('/eventbrite/organizers/push/:id'))
   assert.ok(!collectionSlugs(config).includes('eventbrite-webhooks'))
   assert.ok(collectionSlugs(config).includes('eventbrite-venues'))
 })
@@ -109,4 +116,28 @@ test('events expose a local venue relationship while retaining direct venueId co
   assert.equal(venue.type, 'relationship')
   assert.equal(venue.relationTo, 'eventbrite-venues')
   assert.equal(venueId.type, 'text')
+})
+
+
+test('events expose organizer relationship while retaining direct organizerId compatibility', () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const organizer = events.fields.find((field: any) => field.name === 'organizerRecord')
+  const organizerId = events.fields.find((field: any) => field.name === 'organizerId')
+  assert.equal(organizer.type, 'relationship')
+  assert.equal(organizer.relationTo, 'eventbrite-organizers')
+  assert.equal(organizerId.type, 'text')
+})
+
+test('organizer remote fields and raw payload are server-managed', async () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const organizers = config.collections.find((collection: any) => collection.slug === 'eventbrite-organizers')
+  for (const name of ['organizerId', 'eventbriteURL', 'logoURL', 'longDescriptionHTML', 'numPastEvents', 'numFutureEvents', 'syncStatus', 'lastSyncedAt', 'lastSyncError']) {
+    const field = organizers.fields.find((item: any) => item?.name === name)
+    assert.ok(field, `Expected organizer field ${name}`)
+    assert.equal(await field.access.create({ req: { user: { id: 'u1' } } }), false)
+    assert.equal(await field.access.update({ req: { user: { id: 'u1' } } }), false)
+  }
+  const raw = organizers.fields.find((item: any) => item?.name === 'raw')
+  assert.equal(await raw.access.read({ req: { user: { id: 'u1' } } }), false)
 })
