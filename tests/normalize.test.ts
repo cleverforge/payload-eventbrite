@@ -63,3 +63,27 @@ test('event normalization stores raw Eventbrite data only when explicitly enable
   const event = normalizeEventbriteEvent(source, true)
   assert.equal(event.raw?.id, 'privacy-2')
 })
+
+
+test('does not treat the deprecated Eventbrite description field as full details when it mirrors summary', () => {
+  const normalized = normalizeEventbriteEvent({
+    id: 'new-create-1',
+    summary: 'Short summary',
+    description: { text: 'Short summary', html: 'Short summary' },
+  })
+  assert.equal(normalized.descriptionHTML, undefined)
+})
+
+test('stores rendered Eventbrite listing HTML separately from editable legacy description', () => {
+  const normalized = normalizeEventbriteEvent(
+    {
+      id: 'rendered-1',
+      summary: 'Short summary',
+      description: { text: 'Short summary', html: 'Short summary' },
+    },
+    false,
+    '<div>Short summary</div><div>Full event details</div>',
+  )
+  assert.equal(normalized.descriptionHTML, undefined)
+  assert.equal(normalized.renderedDescriptionHTML, '<div>Short summary</div><div>Full event details</div>')
+})
