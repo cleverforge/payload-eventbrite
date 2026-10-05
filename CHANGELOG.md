@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add authenticated Eventbrite webhook deletion for clean integration disable/uninstall workflows.
+
 - Update repository metadata after transfer to CleverForgeAi.
 - Default raw Eventbrite event response storage to off.
 - Enforce configured inbound/outbound sync direction when registering endpoints and webhook storage.
