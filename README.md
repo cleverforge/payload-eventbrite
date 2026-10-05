@@ -44,6 +44,7 @@ export default buildConfig({
       storeRaw: false,
       requestTimeoutMs: 15000,
       requestRetries: 2,
+      webhookToken: process.env.EVENTBRITE_WEBHOOK_TOKEN,
     }),
   ],
 })
@@ -91,6 +92,8 @@ Assuming Payload's standard `/api` prefix:
 All management endpoints require an authenticated Payload user. The Eventbrite webhook endpoint is public because Eventbrite must call it.
 
 ## Webhook security
+
+Eventbrite's webhook documentation recommends a private/unpublished callback URL and does not define a request-signature header. Core supports an optional shared callback token through `webhookToken`. When set, webhook registration automatically adds the token to the callback URL, delivery validates it using a timing-safe comparison, and log sanitization removes it before webhook payloads are stored.
 
 The webhook processor does not trust the posted event data. For event lifecycle notifications it:
 
