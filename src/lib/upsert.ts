@@ -1,10 +1,11 @@
 import type { Payload, PayloadRequest } from 'payload'
 import type { EventbriteEvent, EventbritePluginOptions } from '../types.js'
 import { normalizeEventbriteEvent } from './normalize.js'
+import { linkVenueRelationship } from './venues.js'
 
 export async function upsertEvent(payload: Payload, event: EventbriteEvent, options: EventbritePluginOptions, req?: PayloadRequest) {
   const slug = options.eventsSlug || 'eventbrite-events'
-  const normalized = normalizeEventbriteEvent(event, options.storeRaw !== false)
+  const normalized = normalizeEventbriteEvent(event, options.storeRaw === true)
   const existing = await payload.find({
     collection: slug as any,
     where: { eventbriteId: { equals: normalized.eventbriteId } },
@@ -13,8 +14,10 @@ export async function upsertEvent(payload: Payload, event: EventbriteEvent, opti
     req,
   })
 
+  const venue = await linkVenueRelationship(payload, normalized.venueId, options, req)
   const data: any = {
     ...normalized,
+    ...(venue ? { venueRecord: venue } : {}),
     syncStatus: 'synced',
     lastSyncedAt: new Date().toISOString(),
     lastSyncError: null,

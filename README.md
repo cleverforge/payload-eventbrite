@@ -10,7 +10,8 @@ Standalone open-source Eventbrite integration for Payload CMS. It does **not** d
 - Payload -> Eventbrite create/update
 - Eventbrite publish/unpublish
 - Basic free or paid ticket-class creation/update
-- Existing Eventbrite organizer and venue assignment
+- Existing Eventbrite organizer assignment
+- Eventbrite venue collection, organization sync, create/update, and event relationship selection
 - OAuth authorization-code helpers
 - Private-token or request-aware token resolver
 - Manual or automatic outbound synchronization
@@ -59,6 +60,14 @@ Keep Eventbrite tokens server-side. Raw Eventbrite responses are not persisted o
 
 Core retries only safe GET/HEAD requests after transient network/429/5xx failures. Mutating POST requests are never retried automatically to avoid duplicate Eventbrite writes.
 
+## Venues
+
+Core includes an `eventbrite-venues` collection. Authenticated users can import the configured organization's venues, create a local venue and push it to Eventbrite, or update an already-linked venue.
+
+Events expose a Payload relationship named `venueRecord`. When selected, Core resolves the related venue's Eventbrite ID during push/auto-push. The existing `venueId` text field remains supported for backwards compatibility and direct-ID workflows.
+
+Eventbrite requires the first address line and a two-letter ISO country code for addresses. Core validates those fields before a venue mutation is sent.
+
 ## Event fields required for publication
 
 Eventbrite publication requires a sufficiently complete event. Core supports the minimum workflow:
@@ -89,6 +98,8 @@ Assuming Payload's standard `/api` prefix:
 - `GET /api/eventbrite/webhooks`
 - `POST /api/eventbrite/webhooks/register`
 - `DELETE /api/eventbrite/webhooks/:id`
+- `POST /api/eventbrite/venues/sync`
+- `POST /api/eventbrite/venues/push/:id`
 
 All management endpoints require an authenticated Payload user. The Eventbrite webhook endpoint is public because Eventbrite must call it.
 

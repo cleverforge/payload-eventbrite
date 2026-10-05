@@ -11,6 +11,8 @@ export type EventbriteResolverOperation =
   | 'webhook-list'
   | 'webhook-register'
   | 'webhook-delete'
+  | 'venue-sync'
+  | 'venue-push'
   | 'auto-push'
 
 export interface EventbriteResolverContext {
@@ -34,6 +36,7 @@ export interface EventbritePluginOptions {
   syncDirection?: SyncDirection
   eventsSlug?: string
   webhookLogSlug?: string
+  venuesSlug?: string
   defaultCurrency?: string
   defaultTimezone?: string
   autoPush?: boolean
@@ -80,6 +83,28 @@ export interface EventbriteEvent {
   changed?: string | null
   published?: string | null
   resource_uri?: string | null
+  [key: string]: unknown
+}
+
+export interface EventbriteVenueAddress {
+  address_1?: string | null
+  address_2?: string | null
+  city?: string | null
+  region?: string | null
+  postal_code?: string | null
+  country?: string | null
+  latitude?: string | null
+  longitude?: string | null
+}
+
+export interface EventbriteVenue {
+  id: string
+  name?: string | null
+  address?: EventbriteVenueAddress | null
+  capacity?: number | null
+  age_restriction?: string | null
+  latitude?: string | null
+  longitude?: string | null
   [key: string]: unknown
 }
 

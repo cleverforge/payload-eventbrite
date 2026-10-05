@@ -25,7 +25,7 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
     "prepare": "npm run build",
     "exports:check": "npm run build && node -e \"import('./dist/index.js').then(m => { if (!m.eventbritePlugin) process.exit(1) })\"",
-    "test:unit": "node --import tsx --test tests/client.test.ts tests/config.test.ts tests/normalize.test.ts tests/resolvers.test.ts tests/webhook.test.ts",
+    "test:unit": "node --import tsx --test tests/client.test.ts tests/config.test.ts tests/normalize.test.ts tests/resolvers.test.ts tests/webhook.test.ts tests/venues.test.ts",
     "test:integration": "node --import tsx --test tests/payload.integration.test.ts"
   },
   "keywords": [

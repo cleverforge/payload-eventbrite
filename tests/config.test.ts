@@ -20,7 +20,10 @@ test('two-way mode registers inbound and outbound capabilities', () => {
   assert.ok(endpointPaths(config).includes('/eventbrite/webhook'))
   assert.ok(endpointPaths(config).includes('/eventbrite/push/:id'))
   assert.ok(endpointPaths(config).includes('/eventbrite/webhooks/:id'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/venues/sync'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/venues/push/:id'))
   assert.ok(collectionSlugs(config).includes('eventbrite-webhooks'))
+  assert.ok(collectionSlugs(config).includes('eventbrite-venues'))
 })
 
 test('inbound-only mode does not expose outbound mutation endpoints', () => {
@@ -29,6 +32,8 @@ test('inbound-only mode does not expose outbound mutation endpoints', () => {
   assert.ok(paths.includes('/eventbrite/webhook'))
   assert.ok(paths.includes('/eventbrite/sync'))
   assert.ok(paths.includes('/eventbrite/webhooks/:id'))
+  assert.ok(paths.includes('/eventbrite/venues/sync'))
+  assert.ok(!paths.includes('/eventbrite/venues/push/:id'))
   assert.ok(!paths.includes('/eventbrite/push/:id'))
   assert.ok(!paths.includes('/eventbrite/publish/:id'))
   assert.ok(!paths.includes('/eventbrite/unpublish/:id'))
@@ -41,7 +46,10 @@ test('outbound-only mode does not expose webhook or import endpoints', () => {
   assert.ok(!paths.includes('/eventbrite/webhook'))
   assert.ok(!paths.includes('/eventbrite/sync'))
   assert.ok(!paths.includes('/eventbrite/webhooks/:id'))
+  assert.ok(!paths.includes('/eventbrite/venues/sync'))
+  assert.ok(paths.includes('/eventbrite/venues/push/:id'))
   assert.ok(!collectionSlugs(config).includes('eventbrite-webhooks'))
+  assert.ok(collectionSlugs(config).includes('eventbrite-venues'))
 })
 
 test('raw Eventbrite response storage is opt-in', () => {
@@ -90,4 +98,15 @@ test('raw Eventbrite responses are unreadable unless explicitly enabled', async 
   assert.equal(await enabledRaw.access.read({ req: { user: { id: 'u1' } } }), true)
   assert.equal(await enabledRaw.access.create({ req: { user: { id: 'u1' } } }), false)
   assert.equal(await enabledRaw.access.update({ req: { user: { id: 'u1' } } }), false)
+})
+
+
+test('events expose a local venue relationship while retaining direct venueId compatibility', () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const venue = events.fields.find((field: any) => field.name === 'venueRecord')
+  const venueId = events.fields.find((field: any) => field.name === 'venueId')
+  assert.equal(venue.type, 'relationship')
+  assert.equal(venue.relationTo, 'eventbrite-venues')
+  assert.equal(venueId.type, 'text')
 })

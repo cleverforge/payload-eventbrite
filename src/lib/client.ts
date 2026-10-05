@@ -1,4 +1,4 @@
-import type { EventbriteEvent, EventbriteTicketClass } from '../types.js'
+import type { EventbriteEvent, EventbriteTicketClass, EventbriteVenue } from '../types.js'
 
 const API_BASE = 'https://www.eventbriteapi.com/v3'
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504])
@@ -134,6 +134,31 @@ export class EventbriteClient {
 
   deleteWebhook(webhookId: string): Promise<{ deleted?: boolean } | undefined> {
     return this.request(`/webhooks/${encodeURIComponent(webhookId)}/`, { method: 'DELETE' })
+  }
+
+  listOrganizationVenues(organizationId: string, continuation?: string): Promise<{ venues?: EventbriteVenue[]; pagination?: { continuation?: string } }> {
+    const params = new URLSearchParams()
+    if (continuation) params.set('continuation', continuation)
+    const query = params.toString()
+    return this.request(`/organizations/${encodeURIComponent(organizationId)}/venues/${query ? `?${query}` : ''}`)
+  }
+
+  getVenue(venueId: string): Promise<EventbriteVenue> {
+    return this.request(`/venues/${encodeURIComponent(venueId)}/`)
+  }
+
+  createVenue(organizationId: string, payload: unknown): Promise<EventbriteVenue> {
+    return this.request(`/organizations/${encodeURIComponent(organizationId)}/venues/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  updateVenue(venueId: string, payload: unknown): Promise<EventbriteVenue> {
+    return this.request(`/venues/${encodeURIComponent(venueId)}/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
   }
 }
 
