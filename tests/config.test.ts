@@ -141,3 +141,32 @@ test('organizer remote fields and raw payload are server-managed', async () => {
   const raw = organizers.fields.find((item: any) => item?.name === 'raw')
   assert.equal(await raw.access.read({ req: { user: { id: 'u1' } } }), false)
 })
+
+
+test('public data collections default to public read and authenticated management', async () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+
+  for (const slug of ['eventbrite-events', 'eventbrite-venues', 'eventbrite-organizers']) {
+    const collection = config.collections.find((item: any) => item.slug === slug)
+    assert.ok(collection?.access)
+    assert.equal(await collection.access.read({ req: { user: undefined } }), true)
+    assert.equal(await collection.access.create({ req: { user: undefined } }), false)
+    assert.equal(await collection.access.update({ req: { user: undefined } }), false)
+    assert.equal(await collection.access.delete({ req: { user: undefined } }), false)
+    assert.equal(await collection.access.create({ req: { user: { id: 'u1' } } }), true)
+  }
+})
+
+test('host applications can override Core collection read and management access', async () => {
+  const config: any = eventbritePlugin({
+    ...base,
+    publicDataReadAccess: ({ req }: any) => Boolean(req.user),
+    managementAccess: ({ req }: any) => req.user?.role === 'admin',
+  })({ collections: [] } as any)
+
+  const events = config.collections.find((item: any) => item.slug === 'eventbrite-events')
+  assert.equal(await events.access.read({ req: { user: undefined } }), false)
+  assert.equal(await events.access.read({ req: { user: { id: 'u1', role: 'member' } } }), true)
+  assert.equal(await events.access.create({ req: { user: { id: 'u1', role: 'member' } } }), false)
+  assert.equal(await events.access.create({ req: { user: { id: 'u2', role: 'admin' } } }), true)
+})
