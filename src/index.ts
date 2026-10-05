@@ -7,12 +7,12 @@ import { buildSyncEndpoint } from './endpoints/sync.js'
 import { buildPushEndpoint, buildPublishEndpoint, buildUnpublishEndpoint } from './endpoints/push.js'
 import { buildWebhooksListEndpoint, buildWebhookRegisterEndpoint } from './endpoints/webhooks-admin.js'
 import { getClient } from './endpoints/helpers.js'
-import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from './lib/normalize.js'
+import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from './lib/normalize.js'\nimport { syncBasicTicket } from './lib/tickets.js'
 
 export * from './types.js'
 export * from './lib/client.js'
 export * from './lib/normalize.js'
-export * from './lib/oauth.js'
+export * from './lib/oauth.js'\nexport * from './lib/tickets.js'
 
 export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
   const opts: EventbritePluginOptions = {
@@ -47,7 +47,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
           await req.payload.update({
             collection: opts.eventsSlug as any,
             id: doc.id,
-            data: { ...normalized, syncStatus: 'synced', lastSyncedAt: new Date().toISOString(), lastSyncError: null } as any,
+            data: { ...normalized, basicTicket, syncStatus: 'synced', lastSyncedAt: new Date().toISOString(), lastSyncError: null } as any,
             overrideAccess: true,
             req,
             context: { eventbriteInbound: true },
