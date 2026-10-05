@@ -27,7 +27,7 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
       const action = body?.config?.action || ''
       if (body?.api_url && /^event\./.test(action)) {
         assertEventbriteEventURL(body.api_url)
-        const client = await getClient(options, req)
+        const client = await getClient(options, req, { operation: 'webhook', webhook: body })
         const event = await client.request<any>(body.api_url)
         await upsertEvent(req.payload, event, options, req)
       }
