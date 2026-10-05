@@ -55,6 +55,8 @@ export interface EventbritePluginOptions {
   publicDataReadAccess?: Access
   /** Create/update/delete access for event/venue/organizer collections. Defaults to authenticated users. */
   managementAccess?: Access
+  /** Authorization for Eventbrite management endpoints. Defaults to any authenticated Payload user. */
+  managementEndpointAccess?: (req: PayloadRequest) => Promise<boolean> | boolean
   onEventSynced?: (event: NormalizedEventbriteEvent, req?: PayloadRequest) => Promise<void> | void
 }
 
