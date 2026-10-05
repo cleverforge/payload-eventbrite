@@ -6,6 +6,7 @@
 - Default raw Eventbrite event response storage to off.
 - Enforce configured inbound/outbound sync direction when registering endpoints and webhook storage.
 - Add bounded Eventbrite request timeouts and safe GET/HEAD retry handling.
+- Add optional shared-token protection for Eventbrite webhook callbacks with log sanitization.
 - Add unit coverage for retry safety and direction-aware configuration.
 - Add a real Payload + SQLite integration harness and read-only live Eventbrite smoke workflow.
 
