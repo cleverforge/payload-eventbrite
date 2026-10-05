@@ -1,20 +1,22 @@
 # @cleverforge/payload-eventbrite
 
-Standalone open-source Eventbrite integration for Payload CMS.
+Standalone open-source Eventbrite integration for Payload CMS. It does **not** depend on CleverForms.
 
-## v0.1 public scope
+## Core capabilities
 
 - Eventbrite Events collection in Payload
-- Eventbrite -> Payload full organization sync
-- Eventbrite webhook ingestion
+- Eventbrite -> Payload organization sync
+- Eventbrite event webhooks
 - Payload -> Eventbrite create/update
-- Eventbrite publish/unpublish endpoints
+- Eventbrite publish/unpublish
+- Basic free or paid ticket-class creation/update
+- Existing Eventbrite organizer and venue assignment
+- OAuth authorization-code helpers
+- Private-token or request-aware token resolver
+- Manual or automatic outbound synchronization
+- Webhook delivery logs
 - Eventbrite API waypoint-token support
-- Manual or automatic outbound sync
-- Server-only token resolver for multi-tenant implementations
-- Raw webhook log for troubleshooting
-
-This package intentionally does **not** depend on CleverForms.
+- SSRF protection for webhook resource retrieval
 
 ## Install
 
@@ -34,6 +36,7 @@ export default buildConfig({
       organizationId: process.env.EVENTBRITE_ORGANIZATION_ID!,
       accessToken: process.env.EVENTBRITE_PRIVATE_TOKEN!,
       defaultTimezone: 'America/New_York',
+      defaultCurrency: 'USD',
       syncDirection: 'two-way',
       autoPush: false,
     }),
@@ -41,39 +44,57 @@ export default buildConfig({
 })
 ```
 
-Do not expose Eventbrite private/OAuth tokens to browser code.
+Keep Eventbrite tokens server-side.
+
+## Event fields required for publication
+
+Eventbrite publication requires a sufficiently complete event. Core supports the minimum workflow:
+
+1. Create or import a Payload event.
+2. Add a description.
+3. Set an existing Eventbrite organizer ID.
+4. For an in-person event, optionally set an existing Eventbrite venue ID.
+5. Configure the Basic Ticket group:
+   - ticket name
+   - quantity
+   - free/paid
+   - price in minor currency units when paid
+6. Push the event.
+7. Publish it.
+
+The publish endpoint re-fetches the Eventbrite event and ticket classes before publishing and returns a clear readiness error when description, organizer, or tickets are missing.
 
 ## Routes
 
-Assuming Payload's standard `/api` route:
+Assuming Payload's standard `/api` prefix:
 
-- `POST /api/eventbrite/webhook` - Eventbrite webhook receiver
-- `POST /api/eventbrite/sync` - authenticated full Eventbrite -> Payload sync
-- `POST /api/eventbrite/push/:id` - authenticated create/update of one Eventbrite event
-- `POST /api/eventbrite/publish/:id` - authenticated publish
-- `POST /api/eventbrite/unpublish/:id` - authenticated unpublish
-- `GET /api/eventbrite/webhooks` - authenticated list of Eventbrite webhooks
-- `POST /api/eventbrite/webhooks/register` - authenticated webhook registration
+- `POST /api/eventbrite/webhook`
+- `POST /api/eventbrite/sync`
+- `POST /api/eventbrite/push/:id`
+- `POST /api/eventbrite/publish/:id`
+- `POST /api/eventbrite/unpublish/:id`
+- `GET /api/eventbrite/webhooks`
+- `POST /api/eventbrite/webhooks/register`
 
-## Eventbrite webhook setup
+All management endpoints require an authenticated Payload user. The Eventbrite webhook endpoint is public because Eventbrite must call it.
 
-Create an Eventbrite webhook for your organization pointing to:
+## Webhook security
 
-```text
-https://YOUR-DOMAIN/api/eventbrite/webhook
-```
+The webhook processor does not trust the posted event data. For event lifecycle notifications it:
 
-Recommended event actions for the public Events plugin are event lifecycle actions such as event creation/update/publication/unpublication. Keep order and attendee actions for the separate future ticketing/attendee package.
+1. verifies that `api_url` is HTTPS,
+2. verifies that the host is Eventbrite's API host,
+3. verifies that the resource path is an Eventbrite event resource, and
+4. re-fetches the event using the configured server-side Eventbrite token.
 
-The webhook processor does not trust webhook content as authoritative event data. It uses the Eventbrite API resource URL and then re-fetches the event with the configured server-side token before writing to Payload.
+## OAuth
 
-## Publishing limitation
+Core exports:
 
-Eventbrite validates that an event is publishable. A draft may need organizer, ticket class, venue/payment configuration, or other Eventbrite-required settings before `publish` succeeds. v0.1 deliberately keeps ticketing and payment configuration outside this package.
+- `buildEventbriteAuthorizeURL()`
+- `exchangeEventbriteOAuthCode()`
 
-## OAuth helpers
-
-The package exports `buildEventbriteAuthorizeURL()` and `exchangeEventbriteOAuthCode()` for server-side OAuth 2.0 integrations. Persist tokens in your application's encrypted server-side storage and return them through `accessTokenResolver`.
+For multi-account applications, persist tokens in encrypted server-side storage and return the correct token through `accessTokenResolver`.
 
 ## Multi-tenant token resolution
 
@@ -81,29 +102,30 @@ The package exports `buildEventbriteAuthorizeURL()` and `exchangeEventbriteOAuth
 eventbritePlugin({
   organizationId: '...',
   accessTokenResolver: async (req) => {
-    // Resolve/decrypt the correct server-side token for this tenant.
     return getTokenForTenant(req)
   },
 })
 ```
 
-## Future independent packages
+## Core vs Pro
 
-Keep these separate rather than turning the Events plugin into a monolith:
+Core handles a complete single-organization Eventbrite event publishing workflow.
 
-1. `@cleverforge/payload-eventbrite-checkout` — embedded checkout and registration UI.
-2. `@cleverforge/payload-eventbrite-attendees` — attendees, orders, refunds, check-in data and reporting.
-3. `@cleverforge/payload-eventbrite-oauth` — reusable multi-organization OAuth connection manager / Eventbrite App Marketplace support.
-4. `@cleverforge/payload-eventbrite-analytics` — event sales and attendance reporting.
-5. `@cleverforge/payload-calendar-sync` — Microsoft 365 / Google Calendar normalization feeding Payload Events; Eventbrite becomes one destination rather than the master calendar.
-6. `@cleverforge/event-normalizer` — platform-neutral event schema/adapters for Eventbrite and other event platforms.
+The commercial `@cleverforge/payload-eventbrite-pro` package extends Core with advanced ticketing, attendee/order sync, multi-account OAuth management, automation, retries, analytics, audit tooling, and higher-volume operational features.
 
-## Security model
+Broader calendar synchronization such as Microsoft 365 and Google Calendar belongs in a separate reusable CleverForge calendar product rather than in Eventbrite Core.
 
-- Eventbrite credentials remain server-side.
-- Webhook `api_url` is restricted to Eventbrite API HTTPS hosts to prevent SSRF.
-- Manual sync/push/publish endpoints require an authenticated Payload user.
-- Webhook deliveries are logged for retry/debugging.
+## Development
+
+```bash
+npm install
+npm run typecheck
+npm test
+npm run build
+npm run pack:check
+```
+
+CI runs against Node 20 and Node 22.
 
 ## License
 
