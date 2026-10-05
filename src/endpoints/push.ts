@@ -1,6 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
-import { getClient, json, requireUser } from './helpers.js'
+import { getClient, getOrganizationId, json, requireUser } from './helpers.js'
 import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from '../lib/normalize.js'
 import { assertPublishReady, syncBasicTicket } from '../lib/tickets.js'
 
@@ -13,11 +13,15 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
       const slug = options.eventsSlug || 'eventbrite-events'
       const id = req.routeParams?.id as string
       const doc: any = await req.payload.findByID({ collection: slug as any, id, overrideAccess: false, req })
-      const client = await getClient(options, req)
+      const resolverContext = { operation: 'push' as const, document: doc }
+      const client = await getClient(options, req, resolverContext)
       const defaults = { currency: options.defaultCurrency || 'USD', timezone: options.defaultTimezone || 'America/New_York' }
       const event = doc.eventbriteId
         ? await client.updateEvent(doc.eventbriteId, toEventbriteUpdatePayload(doc, defaults))
-        : await client.createEvent(options.organizationId, toEventbriteCreatePayload(doc, defaults))
+        : await client.createEvent(
+            await getOrganizationId(options, req, resolverContext),
+            toEventbriteCreatePayload(doc, defaults),
+          )
 
       const normalized = normalizeEventbriteEvent(event, options.storeRaw !== false)
       const ticket = await syncBasicTicket(client, event.id, doc, defaults.currency)
@@ -57,7 +61,7 @@ export const buildPublishEndpoint = (options: EventbritePluginOptions): Endpoint
       const doc: any = await req.payload.findByID({ collection: slug as any, id, req })
       if (!doc.eventbriteId) throw new Error('Push the event to Eventbrite before publishing it')
 
-      const client = await getClient(options, req)
+      const client = await getClient(options, req, { operation: 'publish', document: doc })
       const [event, ticketPage] = await Promise.all([
         client.getEvent(doc.eventbriteId),
         client.listTicketClasses(doc.eventbriteId),
@@ -90,7 +94,7 @@ export const buildUnpublishEndpoint = (options: EventbritePluginOptions): Endpoi
       const id = req.routeParams?.id as string
       const doc: any = await req.payload.findByID({ collection: slug as any, id, req })
       if (!doc.eventbriteId) throw new Error('This event has no Eventbrite ID')
-      const client = await getClient(options, req)
+      const client = await getClient(options, req, { operation: 'unpublish', document: doc })
       const result = await client.unpublishEvent(doc.eventbriteId)
       await req.payload.update({
         collection: slug as any,
