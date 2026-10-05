@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add authenticated Eventbrite webhook deletion for clean disable/uninstall workflows.
+
 - Add idempotent remote-event synchronization coverage against a real Payload SQLite database.
 - Harden GitHub Actions permissions, concurrency, and timeouts; add weekly Dependabot updates.
 
