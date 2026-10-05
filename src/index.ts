@@ -26,7 +26,9 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
     defaultCurrency: 'USD',
     defaultTimezone: 'America/New_York',
     autoPush: false,
-    storeRaw: true,
+    storeRaw: false,
+    requestTimeoutMs: 15_000,
+    requestRetries: 2,
     ...options,
   }
 
@@ -40,6 +42,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
     }
 
     const events = buildEventsCollection(opts)
+    const inboundAllowed = opts.syncDirection === 'eventbrite-to-payload' || opts.syncDirection === 'two-way'
     const outboundAllowed = opts.syncDirection === 'payload-to-eventbrite' || opts.syncDirection === 'two-way'
 
     if (outboundAllowed && opts.autoPush) {
@@ -106,16 +109,24 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
 
     return {
       ...incomingConfig,
-      collections: [...(incomingConfig.collections || []), events, buildWebhookLogCollection(opts)],
+      collections: [
+        ...(incomingConfig.collections || []),
+        events,
+        ...(inboundAllowed ? [buildWebhookLogCollection(opts)] : []),
+      ],
       endpoints: [
         ...(incomingConfig.endpoints || []),
-        buildWebhookEndpoint(opts),
-        buildSyncEndpoint(opts),
-        buildPushEndpoint(opts),
-        buildPublishEndpoint(opts),
-        buildUnpublishEndpoint(opts),
-        buildWebhooksListEndpoint(opts),
-        buildWebhookRegisterEndpoint(opts),
+        ...(inboundAllowed ? [
+          buildWebhookEndpoint(opts),
+          buildSyncEndpoint(opts),
+          buildWebhooksListEndpoint(opts),
+          buildWebhookRegisterEndpoint(opts),
+        ] : []),
+        ...(outboundAllowed ? [
+          buildPushEndpoint(opts),
+          buildPublishEndpoint(opts),
+          buildUnpublishEndpoint(opts),
+        ] : []),
       ],
     }
   }
