@@ -2,6 +2,7 @@ import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions, WebhookPayload } from '../types.js'
 import { assertEventbriteEventURL } from '../lib/client.js'
 import { assertWebhookToken, sanitizeWebhookPayload } from '../lib/webhook.js'
+import { fetchRenderedDescription } from '../lib/description.js'
 import { getClient, json } from './helpers.js'
 import { upsertEvent } from '../lib/upsert.js'
 
@@ -47,7 +48,12 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
         assertEventbriteEventURL(body.api_url)
         const client = await getClient(options, req, { operation: 'webhook', webhook: sanitizedBody })
         const event = await client.request<any>(body.api_url)
-        await upsertEvent(req.payload, event, options, req)
+        const renderedDescriptionHTML = await fetchRenderedDescription(
+          client,
+          event,
+          options.renderedDescriptionMode || 'auto',
+        )
+        await upsertEvent(req.payload, event, options, req, renderedDescriptionHTML)
       }
       await req.payload.update({
         collection: logSlug as any,

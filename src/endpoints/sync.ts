@@ -3,6 +3,7 @@ import type { EventbritePluginOptions } from '../types.js'
 import { errorResponse, getClient, json, requireManagement } from './helpers.js'
 import { upsertEvent } from '../lib/upsert.js'
 import { syncOrganizationEvents } from '../lib/reconcile.js'
+import { fetchRenderedDescription } from '../lib/description.js'
 
 export const buildSyncEndpoint = (options: EventbritePluginOptions): Endpoint => ({
   path: '/eventbrite/sync',
@@ -37,7 +38,12 @@ export const buildEventSyncEndpoint = (options: EventbritePluginOptions): Endpoi
 
       const client = await getClient(options, req, { operation: 'sync', document: doc })
       const remote = await client.getEvent(doc.eventbriteId)
-      const event = await upsertEvent(req.payload, remote, options, req)
+      const renderedDescriptionHTML = await fetchRenderedDescription(
+        client,
+        remote,
+        options.renderedDescriptionMode || 'auto',
+      )
+      const event = await upsertEvent(req.payload, remote, options, req, renderedDescriptionHTML)
       return json({ ok: true, event })
     } catch (error) {
       return errorResponse(error)

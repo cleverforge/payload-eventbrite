@@ -6,6 +6,7 @@ import { assertPublishReady, getPublishReadiness, syncBasicTicket } from '../lib
 import { resolveVenueIdForEvent } from '../lib/venues.js'
 import { resolveOrganizerIdForEvent } from '../lib/organizers.js'
 import { mapEventDataToPayload, mapNormalizedEventToPayload, toCanonicalEventDocument } from '../lib/event-mapping.js'
+import { fetchRenderedDescription } from '../lib/description.js'
 
 export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint => ({
   path: '/eventbrite/push/:id',
@@ -32,7 +33,20 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
             toEventbriteCreatePayload(outboundDoc, defaults),
           )
 
-      const normalized = normalizeEventbriteEvent(event, options.storeRaw === true)
+      const renderedDescriptionHTML = await fetchRenderedDescription(
+        client,
+        event,
+        options.renderedDescriptionMode || 'auto',
+      )
+      const normalized = normalizeEventbriteEvent(
+        event,
+        options.storeRaw === true,
+        renderedDescriptionHTML,
+      )
+      const normalizedForPayload = {
+        ...normalized,
+        descriptionHTML: canonicalDoc.descriptionHTML ?? normalized.descriptionHTML,
+      }
       const ticket = await syncBasicTicket(client, event.id, canonicalDoc, defaults.currency)
       const basicTicket = ticket?.id
         ? { ...(canonicalDoc.basicTicket || {}), ticketClassId: ticket.id }
@@ -42,7 +56,7 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
         collection: slug as any,
         id,
         data: mapEventDataToPayload({
-          ...mapNormalizedEventToPayload(normalized, options),
+          ...mapNormalizedEventToPayload(normalizedForPayload, options),
           basicTicket,
           syncStatus: 'synced',
           lastSyncedAt: new Date().toISOString(),

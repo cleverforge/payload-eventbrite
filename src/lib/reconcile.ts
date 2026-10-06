@@ -2,6 +2,7 @@ import type { Payload, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
 import { getClient, getOrganizationId } from '../endpoints/helpers.js'
 import { upsertEvent } from './upsert.js'
+import { fetchRenderedDescription } from './description.js'
 
 export const MIN_RECONCILIATION_INTERVAL_MS = 60_000
 export const DEFAULT_RECONCILIATION_INTERVAL_MS = 15 * 60_000
@@ -30,7 +31,12 @@ export async function syncOrganizationEvents(
   do {
     const page = await client.listOrganizationEvents(organizationId, continuation)
     for (const event of page.events || []) {
-      await upsertEvent(payload, event, options, req)
+      const renderedDescriptionHTML = await fetchRenderedDescription(
+        client,
+        event,
+        options.renderedDescriptionMode || 'auto',
+      )
+      await upsertEvent(payload, event, options, req, renderedDescriptionHTML)
       imported++
     }
     continuation = page.pagination?.continuation || undefined

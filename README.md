@@ -11,6 +11,7 @@ The documented Core feature scope required before stable v1 is complete. The pac
 - Eventbrite Events collection in Payload
 - Eventbrite -> Payload organization sync
 - Eventbrite event webhooks
+- Eventbrite full rendered-description hydration for New Create events
 - Payload -> Eventbrite create/update
 - Eventbrite publish/unpublish
 - Payload Admin event controls for Sync Now, Push, readiness checking, Publish, and Unpublish
@@ -71,6 +72,7 @@ export default buildConfig({
       storeRaw: false,
       requestTimeoutMs: 15000,
       requestRetries: 2,
+      renderedDescriptionMode: 'auto',
       webhookToken: process.env.EVENTBRITE_WEBHOOK_TOKEN,
     }),
   ],
@@ -101,6 +103,23 @@ By default, Core registers its own `eventbrite-events` collection. To use a diff
 Use `eventCollection.fieldMap` to map Core's canonical event fields to host field names. For example, `title` can map to `name`, `descriptionHTML` to `body`, and `startAt` / `endAt` to existing date fields. The mapping is bidirectional: Eventbrite imports write to the mapped fields, while Push and auto-push read the same mapped fields back into the canonical Eventbrite model.
 
 When `useExisting` is enabled, Core augments the target collection with only missing Eventbrite integration fields and preserves the collection's existing access rules, hooks, and Admin configuration. Core refuses to silently register a duplicate collection when the target slug already exists.
+
+## Event descriptions
+
+Eventbrite's current API marks the event object's legacy `description` field as deprecated for newer Create flows. For events created with the newer Eventbrite editor, the normal event response may expose the summary where older integrations expected the full description.
+
+Core keeps two separate fields:
+
+- `descriptionHTML`: editable HTML used for Payload -> Eventbrite writes.
+- `renderedDescriptionHTML`: server-managed fully rendered listing HTML retrieved from `GET /events/{event_id}/description/`.
+
+`renderedDescriptionMode` controls the additional read:
+
+- `auto` (default): fetch when the legacy description is missing or appears to mirror the summary.
+- `always`: always request the fully rendered description.
+- `never`: never make the additional description request.
+
+Rendered-description hydration is best effort. A missing Eventbrite permission or transient description-endpoint failure does not block the rest of event synchronization.
 
 ## Event logo/media mirroring
 

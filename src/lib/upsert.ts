@@ -33,9 +33,15 @@ export function shouldApplyInboundEvent(
   return true
 }
 
-export async function upsertEvent(payload: Payload, event: EventbriteEvent, options: EventbritePluginOptions, req?: PayloadRequest) {
+export async function upsertEvent(
+  payload: Payload,
+  event: EventbriteEvent,
+  options: EventbritePluginOptions,
+  req?: PayloadRequest,
+  renderedDescriptionHTML?: string,
+) {
   const slug = options.eventsSlug || 'eventbrite-events'
-  const normalized = normalizeEventbriteEvent(event, options.storeRaw === true)
+  const normalized = normalizeEventbriteEvent(event, options.storeRaw === true, renderedDescriptionHTML)
   const existing = await payload.find({
     collection: slug as any,
     where: { eventbriteId: { equals: normalized.eventbriteId } },

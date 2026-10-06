@@ -32,7 +32,13 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
   fields: [
     { name: eventFieldName(options, 'title'), type: 'text', required: true },
     { name: eventFieldName(options, 'summary'), type: 'textarea' },
-    { name: eventFieldName(options, 'descriptionHTML'), type: 'textarea', admin: { description: 'HTML description sent to Eventbrite.' } },
+    { name: eventFieldName(options, 'descriptionHTML'), type: 'textarea', admin: { description: 'Editable HTML description sent to Eventbrite.' } },
+    {
+      name: 'renderedDescriptionHTML',
+      type: 'textarea',
+      access: serverManaged,
+      admin: { readOnly: true, description: 'Fully rendered Eventbrite listing HTML retrieved from the current description endpoint.' },
+    },
     { name: eventFieldName(options, 'startAt'), type: 'date', required: true },
     { name: eventFieldName(options, 'endAt'), type: 'date', required: true },
     { name: eventFieldName(options, 'timezone'), type: 'text', defaultValue: options.defaultTimezone || 'America/New_York' },
