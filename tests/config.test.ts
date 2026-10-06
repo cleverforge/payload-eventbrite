@@ -277,3 +277,56 @@ test('scheduled reconciliation is opt-in and preserves Payload onInit', () => {
   assert.equal(typeof enabled.onInit, 'function')
   assert.notEqual(enabled.onInit, existingOnInit)
 })
+
+
+test('existing custom event collection is augmented instead of duplicated', () => {
+  const hostEvents: any = {
+    slug: 'events',
+    admin: { useAsTitle: 'name' },
+    access: { read: () => true },
+    fields: [
+      { name: 'name', type: 'text', required: true },
+      { name: 'startsAt', type: 'date', required: true },
+      { name: 'endsAt', type: 'date', required: true },
+    ],
+  }
+
+  const result: any = eventbritePlugin({
+    ...base,
+    eventsSlug: 'events',
+    eventCollection: {
+      useExisting: true,
+      fieldMap: {
+        title: 'name',
+        startAt: 'startsAt',
+        endAt: 'endsAt',
+      },
+    },
+  })({ collections: [hostEvents] } as any)
+
+  const events = result.collections.filter((collection: any) => collection.slug === 'events')
+  assert.equal(events.length, 1)
+  assert.equal(events[0].admin.useAsTitle, 'name')
+  assert.ok(events[0].fields.some((field: any) => field.name === 'eventbriteId'))
+  assert.ok(events[0].fields.some((field: any) => field.name === 'syncStatus'))
+  assert.equal(events[0].fields.filter((field: any) => field.name === 'name').length, 1)
+})
+
+test('existing event collection requires explicit useExisting opt-in', () => {
+  const hostEvents: any = { slug: 'eventbrite-events', fields: [{ name: 'title', type: 'text' }] }
+  assert.throws(
+    () => eventbritePlugin(base)({ collections: [hostEvents] } as any),
+    /eventCollection\.useExisting/,
+  )
+})
+
+test('useExisting fails clearly when the target collection is missing', () => {
+  assert.throws(
+    () => eventbritePlugin({
+      ...base,
+      eventsSlug: 'events',
+      eventCollection: { useExisting: true },
+    })({ collections: [] } as any),
+    /requires an existing collection/,
+  )
+})
