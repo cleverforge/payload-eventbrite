@@ -111,3 +111,54 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
     },
   ],
 })
+
+
+export const augmentEventsCollection = (
+  existing: CollectionConfig,
+  options: EventbritePluginOptions,
+): CollectionConfig => {
+  const generated = buildEventsCollection(options)
+  const existingNames = new Set(
+    (existing.fields || [])
+      .map((field: any) => field?.name)
+      .filter(Boolean),
+  )
+  const generatedAdmin: any = generated.admin || {}
+  const existingAdmin: any = existing.admin || {}
+
+  return {
+    ...generated,
+    ...existing,
+    access: existing.access || generated.access,
+    admin: {
+      ...generatedAdmin,
+      ...existingAdmin,
+      useAsTitle: existingAdmin.useAsTitle || generatedAdmin.useAsTitle,
+      defaultColumns: existingAdmin.defaultColumns || generatedAdmin.defaultColumns,
+      components: {
+        ...(generatedAdmin.components || {}),
+        ...(existingAdmin.components || {}),
+        edit: {
+          ...(generatedAdmin.components?.edit || {}),
+          ...(existingAdmin.components?.edit || {}),
+          beforeDocumentControls: [
+            ...(existingAdmin.components?.edit?.beforeDocumentControls || []),
+            ...(generatedAdmin.components?.edit?.beforeDocumentControls || []),
+          ],
+        },
+      } as any,
+    },
+    fields: [
+      ...(existing.fields || []),
+      ...(generated.fields || []).filter((field: any) => !field?.name || !existingNames.has(field.name)),
+    ],
+    hooks: {
+      ...(generated.hooks || {}),
+      ...(existing.hooks || {}),
+      afterChange: [
+        ...(existing.hooks?.afterChange || []),
+        ...(generated.hooks?.afterChange || []),
+      ],
+    },
+  }
+}
