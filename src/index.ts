@@ -27,6 +27,7 @@ export * from './lib/webhook.js'
 export * from './lib/venues.js'
 export * from './lib/organizers.js'
 export * from './lib/reconcile.js'
+export * from './lib/media.js'
 
 export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
   const opts: EventbritePluginOptions = {
