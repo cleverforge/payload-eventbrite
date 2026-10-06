@@ -87,6 +87,10 @@ export class EventbriteClient {
     return this.request(`/events/${encodeURIComponent(eventId)}/?expand=venue,organizer,logo`)
   }
 
+  getEventDescription(eventId: string): Promise<{ description?: string | null }> {
+    return this.request(`/events/${encodeURIComponent(eventId)}/description/`)
+  }
+
   async listOrganizationEvents(organizationId: string, continuation?: string): Promise<{ events: EventbriteEvent[]; pagination?: any }> {
     const params = new URLSearchParams({ expand: 'venue,organizer,logo', page_size: '50' })
     if (continuation) params.set('continuation', continuation)
