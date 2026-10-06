@@ -11,10 +11,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./admin": "./admin.js"
   },
   "files": [
     "dist",
+    "admin.js",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
