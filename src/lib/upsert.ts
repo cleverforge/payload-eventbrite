@@ -48,7 +48,7 @@ export async function upsertEvent(payload: Payload, event: EventbriteEvent, opti
       collection: slug as any,
       id: current.id,
       data: {
-        syncStatus: 'pending',
+        syncStatus: 'conflict',
         lastSyncError: 'Inbound Eventbrite update was not applied because Payload also changed after the last successful sync.',
       } as any,
       overrideAccess: true,
