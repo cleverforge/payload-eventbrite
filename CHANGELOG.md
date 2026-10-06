@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Mark the documented Core pre-1.0 feature scope complete.
+- Restrict the beta publishing workflow to prerelease versions and the npm `beta` dist-tag.
+- Add a separate guarded stable publishing workflow that requires a stable package version plus successful live smoke and write-acceptance runs on the exact commit before publishing npm `latest`.
+- Add lint to publishing validation and document the stable-release procedure.
+
 ## 0.4.0-beta.0 - 2026-10-05
 
 - Add bidirectional field mapping for custom Payload event collections and explicit augmentation of an existing events collection.

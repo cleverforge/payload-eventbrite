@@ -23,10 +23,10 @@ Purpose: synchronize and publish event records between Payload CMS and Eventbrit
 ### Core additions before stable v1
 - [x] Venue synchronization and venue creation
 - [x] Organizer synchronization, creation, and selection
-- Basic Ticket Class synchronization and creation
-  - free ticket
-  - paid ticket
-  - basic quantity/capacity
+- [x] Basic Ticket Class synchronization and creation
+  - [x] free ticket
+  - [x] paid ticket
+  - [x] basic quantity/capacity
 - [x] Event logo/media synchronization into Payload uploads
 - [x] Payload admin actions for Push, Publish, Unpublish, and Sync Now
 - [x] Clear publish-readiness validation
@@ -35,6 +35,8 @@ Purpose: synchronize and publish event records between Payload CMS and Eventbrit
 - [x] Basic conflict policy using Eventbrite/Payload changed timestamps
 
 These capabilities remain public because Eventbrite requires core event setup, including an organizer and at least one ticket, before an event can be published.
+
+The documented Core feature scope required before stable v1 is complete. Stable promotion remains gated by the live Eventbrite smoke/write acceptance workflows and the runtime validation in `RELEASE.md`.
 
 ## Commercial extension: @cleverforge/payload-eventbrite-pro
 
