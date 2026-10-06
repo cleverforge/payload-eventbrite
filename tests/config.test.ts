@@ -330,3 +330,13 @@ test('useExisting fails clearly when the target collection is missing', () => {
     /requires an existing collection/,
   )
 })
+
+
+test('rendered Eventbrite description is server-managed', async () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const field = events.fields.find((item: any) => item?.name === 'renderedDescriptionHTML')
+  assert.ok(field)
+  assert.equal(await field.access.create({ req: { user: { id: 'u1' } } }), false)
+  assert.equal(await field.access.update({ req: { user: { id: 'u1' } } }), false)
+})
