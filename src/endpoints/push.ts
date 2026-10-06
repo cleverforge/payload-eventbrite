@@ -5,6 +5,7 @@ import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdate
 import { assertPublishReady, getPublishReadiness, syncBasicTicket } from '../lib/tickets.js'
 import { resolveVenueIdForEvent } from '../lib/venues.js'
 import { resolveOrganizerIdForEvent } from '../lib/organizers.js'
+import { mapEventDataToPayload, mapNormalizedEventToPayload, toCanonicalEventDocument } from '../lib/event-mapping.js'
 
 export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint => ({
   path: '/eventbrite/push/:id',
@@ -17,13 +18,14 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
       const doc: any = await req.payload.findByID({ collection: slug as any, id, overrideAccess: false, req })
       const resolverContext = { operation: 'push' as const, document: doc }
       const client = await getClient(options, req, resolverContext)
+      const canonicalDoc = toCanonicalEventDocument(doc, options)
       const defaults = { currency: options.defaultCurrency || 'USD', timezone: options.defaultTimezone || 'America/New_York' }
       const outboundDoc = {
-        ...doc,
-        venueId: await resolveVenueIdForEvent(req.payload, doc, options, req),
-        organizerId: await resolveOrganizerIdForEvent(req.payload, doc, options, req),
+        ...canonicalDoc,
+        venueId: await resolveVenueIdForEvent(req.payload, canonicalDoc, options, req),
+        organizerId: await resolveOrganizerIdForEvent(req.payload, canonicalDoc, options, req),
       }
-      const event = doc.eventbriteId
+      const event = canonicalDoc.eventbriteId
         ? await client.updateEvent(doc.eventbriteId, toEventbriteUpdatePayload(outboundDoc, defaults))
         : await client.createEvent(
             await getOrganizationId(options, req, resolverContext),
@@ -31,21 +33,21 @@ export const buildPushEndpoint = (options: EventbritePluginOptions): Endpoint =>
           )
 
       const normalized = normalizeEventbriteEvent(event, options.storeRaw === true)
-      const ticket = await syncBasicTicket(client, event.id, doc, defaults.currency)
+      const ticket = await syncBasicTicket(client, event.id, canonicalDoc, defaults.currency)
       const basicTicket = ticket?.id
-        ? { ...(doc.basicTicket || {}), ticketClassId: ticket.id }
-        : doc.basicTicket
+        ? { ...(canonicalDoc.basicTicket || {}), ticketClassId: ticket.id }
+        : canonicalDoc.basicTicket
 
       const updated = await req.payload.update({
         collection: slug as any,
         id,
-        data: {
-          ...normalized,
+        data: mapEventDataToPayload({
+          ...mapNormalizedEventToPayload(normalized, options),
           basicTicket,
           syncStatus: 'synced',
           lastSyncedAt: new Date().toISOString(),
           lastSyncError: null,
-        } as any,
+        }, options) as any,
         overrideAccess: true,
         req,
         context: { eventbriteInbound: true },
