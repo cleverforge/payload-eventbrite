@@ -5,8 +5,8 @@ import { buildVenuesCollection } from './collections/venues.js'
 import { buildOrganizersCollection } from './collections/organizers.js'
 import { buildWebhookLogCollection } from './collections/webhooks.js'
 import { buildWebhookEndpoint } from './endpoints/webhook.js'
-import { buildSyncEndpoint } from './endpoints/sync.js'
-import { buildPushEndpoint, buildPublishEndpoint, buildUnpublishEndpoint } from './endpoints/push.js'
+import { buildEventSyncEndpoint, buildSyncEndpoint } from './endpoints/sync.js'
+import { buildPushEndpoint, buildPublishEndpoint, buildReadinessEndpoint, buildUnpublishEndpoint } from './endpoints/push.js'
 import { buildWebhookDeleteEndpoint, buildWebhooksListEndpoint, buildWebhookRegisterEndpoint } from './endpoints/webhooks-admin.js'
 import { buildVenuePushEndpoint, buildVenueSyncEndpoint } from './endpoints/venues.js'
 import { buildOrganizerPushEndpoint, buildOrganizerSyncEndpoint } from './endpoints/organizers.js'
@@ -138,6 +138,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
         ...(inboundAllowed ? [
           buildWebhookEndpoint(opts),
           buildSyncEndpoint(opts),
+          buildEventSyncEndpoint(opts),
           buildWebhooksListEndpoint(opts),
           buildWebhookRegisterEndpoint(opts),
           buildWebhookDeleteEndpoint(opts),
@@ -148,6 +149,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
           buildPushEndpoint(opts),
           buildPublishEndpoint(opts),
           buildUnpublishEndpoint(opts),
+          buildReadinessEndpoint(opts),
           buildVenuePushEndpoint(opts),
           buildOrganizerPushEndpoint(opts),
         ] : []),
