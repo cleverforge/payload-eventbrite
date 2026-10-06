@@ -3,6 +3,7 @@ import type { EventbriteEvent, EventbritePluginOptions } from '../types.js'
 import { normalizeEventbriteEvent } from './normalize.js'
 import { linkVenueRelationship } from './venues.js'
 import { linkOrganizerRelationship } from './organizers.js'
+import { syncEventLogo } from './media.js'
 
 const timestamp = (value: unknown) => {
   const parsed = value ? Date.parse(String(value)) : Number.NaN
@@ -57,14 +58,16 @@ export async function upsertEvent(payload: Payload, event: EventbriteEvent, opti
     })
   }
 
-  const [venue, organizer] = await Promise.all([
+  const [venue, organizer, logo] = await Promise.all([
     linkVenueRelationship(payload, normalized.venueId, options, req),
     linkOrganizerRelationship(payload, normalized.organizerId, options, req),
+    syncEventLogo(payload, event, options, current, req),
   ])
   const data: any = {
     ...normalized,
     ...(venue ? { venueRecord: venue } : {}),
     ...(organizer ? { organizerRecord: organizer } : {}),
+    ...logo,
     syncStatus: 'synced',
     lastSyncedAt: new Date().toISOString(),
     lastSyncError: null,
