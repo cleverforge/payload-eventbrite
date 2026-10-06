@@ -1,6 +1,6 @@
 import type { CollectionAfterChangeHook, Config, Plugin } from 'payload'
 import type { EventbritePluginOptions } from './types.js'
-import { buildEventsCollection } from './collections/events.js'
+import { augmentEventsCollection, buildEventsCollection } from './collections/events.js'
 import { buildVenuesCollection } from './collections/venues.js'
 import { buildOrganizersCollection } from './collections/organizers.js'
 import { buildWebhookLogCollection } from './collections/webhooks.js'
@@ -16,6 +16,7 @@ import { syncBasicTicket } from './lib/tickets.js'
 import { resolveVenueIdForEvent } from './lib/venues.js'
 import { resolveOrganizerIdForEvent } from './lib/organizers.js'
 import { startEventbriteReconciliation } from './lib/reconcile.js'
+import { mapEventDataToPayload, mapNormalizedEventToPayload, toCanonicalEventDocument } from './lib/event-mapping.js'
 
 export * from './types.js'
 export * from './lib/client.js'
@@ -28,6 +29,7 @@ export * from './lib/venues.js'
 export * from './lib/organizers.js'
 export * from './lib/reconcile.js'
 export * from './lib/media.js'
+export * from './lib/event-mapping.js'
 
 export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
   const opts: EventbritePluginOptions = {
@@ -56,7 +58,25 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
       throw new Error('@cleverforge/payload-eventbrite requires accessToken or accessTokenResolver')
     }
 
-    const events = buildEventsCollection(opts)
+    const incomingCollections = [...(incomingConfig.collections || [])]
+    const eventSlug = opts.eventsSlug || 'eventbrite-events'
+    const existingEventIndex = incomingCollections.findIndex(collection => collection.slug === eventSlug)
+
+    if (!opts.eventCollection?.useExisting && existingEventIndex >= 0) {
+      throw new Error(
+        `@cleverforge/payload-eventbrite found an existing collection named "${eventSlug}". Set eventCollection.useExisting to true to augment it instead of registering a duplicate.`,
+      )
+    }
+    if (opts.eventCollection?.useExisting && existingEventIndex < 0) {
+      throw new Error(
+        `@cleverforge/payload-eventbrite eventCollection.useExisting requires an existing collection named "${eventSlug}".`,
+      )
+    }
+
+    let events = opts.eventCollection?.useExisting
+      ? augmentEventsCollection(incomingCollections[existingEventIndex]!, opts)
+      : buildEventsCollection(opts)
+
     const inboundAllowed = opts.syncDirection === 'eventbrite-to-payload' || opts.syncDirection === 'two-way'
     const outboundAllowed = opts.syncDirection === 'payload-to-eventbrite' || opts.syncDirection === 'two-way'
 
@@ -72,34 +92,35 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
             timezone: opts.defaultTimezone || 'America/New_York',
           }
 
+          const canonicalDoc = toCanonicalEventDocument(doc, opts)
           const outboundDoc = {
-            ...doc,
-            venueId: await resolveVenueIdForEvent(req.payload, doc, opts, req),
-            organizerId: await resolveOrganizerIdForEvent(req.payload, doc, opts, req),
+            ...canonicalDoc,
+            venueId: await resolveVenueIdForEvent(req.payload, canonicalDoc, opts, req),
+            organizerId: await resolveOrganizerIdForEvent(req.payload, canonicalDoc, opts, req),
           }
-          const remote = doc.eventbriteId
-            ? await client.updateEvent(doc.eventbriteId, toEventbriteUpdatePayload(outboundDoc, defaults))
+          const remote = canonicalDoc.eventbriteId
+            ? await client.updateEvent(canonicalDoc.eventbriteId, toEventbriteUpdatePayload(outboundDoc, defaults))
             : await client.createEvent(
                 await getOrganizationId(opts, req, resolverContext),
                 toEventbriteCreatePayload(outboundDoc, defaults),
               )
 
           const normalized = normalizeEventbriteEvent(remote, opts.storeRaw === true)
-          const ticket = await syncBasicTicket(client, remote.id, doc, defaults.currency)
+          const ticket = await syncBasicTicket(client, remote.id, canonicalDoc, defaults.currency)
           const basicTicket = ticket?.id
-            ? { ...(doc.basicTicket || {}), ticketClassId: ticket.id }
-            : doc.basicTicket
+            ? { ...(canonicalDoc.basicTicket || {}), ticketClassId: ticket.id }
+            : canonicalDoc.basicTicket
 
           await req.payload.update({
             collection: opts.eventsSlug as any,
             id: doc.id,
-            data: {
-              ...normalized,
+            data: mapEventDataToPayload({
+              ...mapNormalizedEventToPayload(normalized, opts),
               basicTicket,
               syncStatus: 'synced',
               lastSyncedAt: new Date().toISOString(),
               lastSyncError: null,
-            } as any,
+            }, opts) as any,
             overrideAccess: true,
             req,
             context: { eventbriteInbound: true },
@@ -127,6 +148,8 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
       }
     }
 
+    if (opts.eventCollection?.useExisting) incomingCollections[existingEventIndex] = events
+
     const onInit = inboundAllowed && opts.reconciliation?.enabled
       ? async (payload: Parameters<NonNullable<Config['onInit']>>[0]) => {
           if (incomingConfig.onInit) await incomingConfig.onInit(payload)
@@ -138,8 +161,8 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
       ...incomingConfig,
       ...(onInit ? { onInit } : {}),
       collections: [
-        ...(incomingConfig.collections || []),
-        events,
+        ...incomingCollections,
+        ...(!opts.eventCollection?.useExisting ? [events] : []),
         buildVenuesCollection(opts),
         buildOrganizersCollection(opts),
         ...(inboundAllowed ? [buildWebhookLogCollection(opts)] : []),
