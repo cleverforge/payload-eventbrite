@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add configurable timestamp-based event conflict handling with `eventbrite-wins`, `payload-wins`, and `newest-wins` policies.
+
 - Return controlled 401/400 responses for invalid webhook tokens and malformed payloads before persistence.
 - Make webhook delivery logs inherit host `managementAccess` for read/delete operations.
 
