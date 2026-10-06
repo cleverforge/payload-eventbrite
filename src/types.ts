@@ -3,6 +3,25 @@ import type { Access, PayloadRequest } from 'payload'
 export type SyncDirection = 'eventbrite-to-payload' | 'payload-to-eventbrite' | 'two-way'
 export type EventbriteConflictPolicy = 'eventbrite-wins' | 'payload-wins' | 'newest-wins'
 
+export type EventbriteEventFieldMap = Partial<Record<
+  | 'title'
+  | 'summary'
+  | 'descriptionHTML'
+  | 'startAt'
+  | 'endAt'
+  | 'timezone'
+  | 'onlineEvent'
+  | 'listed'
+  | 'capacity'
+  | 'currency'
+  | 'venueRecord'
+  | 'venueId'
+  | 'organizerRecord'
+  | 'organizerId'
+  | 'basicTicket',
+  string
+>>
+
 export type EventbriteResolverOperation =
   | 'sync'
   | 'push'
@@ -38,6 +57,13 @@ export interface EventbritePluginOptions {
   ) => Promise<string> | string
   syncDirection?: SyncDirection
   eventsSlug?: string
+  /** Reuse an existing Payload event collection and/or map its content fields to Eventbrite's canonical event model. */
+  eventCollection?: {
+    /** When true, augment the collection identified by eventsSlug instead of registering a new event collection. */
+    useExisting?: boolean
+    /** Map canonical Eventbrite event field names to host collection field names. */
+    fieldMap?: EventbriteEventFieldMap
+  }
   webhookLogSlug?: string
   venuesSlug?: string
   organizersSlug?: string
