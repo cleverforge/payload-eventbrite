@@ -17,9 +17,11 @@ import { resolveVenueIdForEvent } from './lib/venues.js'
 import { resolveOrganizerIdForEvent } from './lib/organizers.js'
 import { startEventbriteReconciliation } from './lib/reconcile.js'
 import { mapEventDataToPayload, mapNormalizedEventToPayload, toCanonicalEventDocument } from './lib/event-mapping.js'
+import { fetchRenderedDescription } from './lib/description.js'
 
 export * from './types.js'
 export * from './lib/client.js'
+export * from './lib/description.js'
 export * from './lib/normalize.js'
 export * from './lib/oauth.js'
 export * from './lib/tickets.js'
@@ -46,6 +48,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
     storeRaw: false,
     requestTimeoutMs: 15_000,
     requestRetries: 2,
+    renderedDescriptionMode: 'auto',
     ...options,
   }
 
@@ -105,7 +108,20 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
                 toEventbriteCreatePayload(outboundDoc, defaults),
               )
 
-          const normalized = normalizeEventbriteEvent(remote, opts.storeRaw === true)
+          const renderedDescriptionHTML = await fetchRenderedDescription(
+            client,
+            remote,
+            opts.renderedDescriptionMode || 'auto',
+          )
+          const normalized = normalizeEventbriteEvent(
+            remote,
+            opts.storeRaw === true,
+            renderedDescriptionHTML,
+          )
+          const normalizedForPayload = {
+            ...normalized,
+            descriptionHTML: canonicalDoc.descriptionHTML ?? normalized.descriptionHTML,
+          }
           const ticket = await syncBasicTicket(client, remote.id, canonicalDoc, defaults.currency)
           const basicTicket = ticket?.id
             ? { ...(canonicalDoc.basicTicket || {}), ticketClassId: ticket.id }
@@ -115,7 +131,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
             collection: opts.eventsSlug as any,
             id: doc.id,
             data: mapEventDataToPayload({
-              ...mapNormalizedEventToPayload(normalized, opts),
+              ...mapNormalizedEventToPayload(normalizedForPayload, opts),
               basicTicket,
               syncStatus: 'synced',
               lastSyncedAt: new Date().toISOString(),
