@@ -29,7 +29,8 @@
     "prepare": "npm run build",
     "exports:check": "npm run build && node -e \"import('./dist/index.js').then(m => { if (!m.eventbritePlugin) process.exit(1) })\"",
     "test:unit": "node --import tsx --test tests/client.test.ts tests/config.test.ts tests/normalize.test.ts tests/resolvers.test.ts tests/webhook.test.ts tests/venues.test.ts tests/organizers.test.ts",
-    "test:integration": "node --import tsx --test tests/payload.integration.test.ts tests/endpoints.integration.test.ts tests/paid-update.integration.test.ts"
+    "test:integration": "node --import tsx --test tests/payload.integration.test.ts tests/endpoints.integration.test.ts tests/paid-update.integration.test.ts",
+    "lint": "eslint . --max-warnings=0"
   },
   "keywords": [
     "payload",
@@ -56,7 +57,9 @@
     "payload": "^3.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "@payloadcms/db-sqlite": "^3.0.0"
+    "@payloadcms/db-sqlite": "^3.0.0",
+    "eslint": "^10.12.0",
+    "typescript-eslint": "^8.0.0"
   },
   "engines": {
     "node": ">=20.9.0"
