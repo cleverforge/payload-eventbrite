@@ -263,3 +263,17 @@ test('event collection registers Payload-native Eventbrite document controls', (
   assert.equal(controls[0].clientProps.inboundAllowed, true)
   assert.equal(controls[0].clientProps.outboundAllowed, true)
 })
+
+
+test('scheduled reconciliation is opt-in and preserves Payload onInit', () => {
+  const existingOnInit = async () => undefined
+  const disabled: any = eventbritePlugin(base)({ collections: [], onInit: existingOnInit } as any)
+  assert.equal(disabled.onInit, existingOnInit)
+
+  const enabled: any = eventbritePlugin({
+    ...base,
+    reconciliation: { enabled: true, intervalMs: 300_000 },
+  })({ collections: [], onInit: existingOnInit } as any)
+  assert.equal(typeof enabled.onInit, 'function')
+  assert.notEqual(enabled.onInit, existingOnInit)
+})
