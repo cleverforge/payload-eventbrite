@@ -2,12 +2,17 @@ import type { EventbriteEvent, NormalizedEventbriteEvent } from '../types.js'
 
 const compact = <T>(value: T | null | undefined): T | undefined => value == null ? undefined : value
 
-export function normalizeEventbriteEvent(event: EventbriteEvent, storeRaw = false): NormalizedEventbriteEvent {
+export function normalizeEventbriteEvent(
+  event: EventbriteEvent,
+  storeRaw = false,
+  renderedDescriptionHTML?: string,
+): NormalizedEventbriteEvent {
   return {
     eventbriteId: event.id,
     title: event.name?.text || event.name?.html || `Eventbrite ${event.id}`,
     summary: compact(event.summary),
-    descriptionHTML: compact(event.description?.html),
+    descriptionHTML: legacyDescriptionHTML(event),
+    renderedDescriptionHTML: compact(renderedDescriptionHTML),
     eventbriteURL: compact(event.url),
     startAt: compact(event.start?.utc || event.start?.local),
     endAt: compact(event.end?.utc || event.end?.local),
@@ -89,4 +94,12 @@ function toEventbriteDate(value: string, timezone: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) throw new Error(`Invalid event date: ${value}`)
   return { utc: date.toISOString().replace('.000Z', 'Z'), timezone }
+}
+
+
+function legacyDescriptionHTML(event: EventbriteEvent) {
+  const summary = event.summary?.trim() || ''
+  const text = event.description?.text?.trim() || ''
+  if (summary && text === summary) return undefined
+  return compact(event.description?.html)
 }
