@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
 import { eventDataAccess } from '../lib/access.js'
+import { eventFieldName } from '../lib/event-mapping.js'
 
 const serverManaged = {
   create: () => false,
@@ -11,38 +12,50 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
   access: eventDataAccess(options),
   slug: options.eventsSlug || 'eventbrite-events',
   admin: {
-    useAsTitle: 'title',
-    defaultColumns: ['title', 'startAt', 'status', 'syncStatus', 'lastSyncedAt'],
+    useAsTitle: eventFieldName(options, 'title'),
+    defaultColumns: [eventFieldName(options, 'title'), eventFieldName(options, 'startAt'), 'status', 'syncStatus', 'lastSyncedAt'],
     group: 'Eventbrite',
     description: 'Events synchronized between Payload CMS and Eventbrite.',
+    components: {
+      edit: {
+        beforeDocumentControls: [{
+          path: '@cleverforge/payload-eventbrite/admin',
+          exportName: 'EventbriteEventActions',
+          clientProps: {
+            inboundAllowed: options.syncDirection !== 'payload-to-eventbrite',
+            outboundAllowed: options.syncDirection !== 'eventbrite-to-payload',
+          },
+        }],
+      },
+    } as any,
   },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'summary', type: 'textarea' },
-    { name: 'descriptionHTML', type: 'textarea', admin: { description: 'HTML description sent to Eventbrite.' } },
-    { name: 'startAt', type: 'date', required: true },
-    { name: 'endAt', type: 'date', required: true },
-    { name: 'timezone', type: 'text', defaultValue: options.defaultTimezone || 'America/New_York' },
-    { name: 'onlineEvent', type: 'checkbox', defaultValue: false },
-    { name: 'listed', type: 'checkbox', defaultValue: true },
-    { name: 'capacity', type: 'number', min: 0 },
-    { name: 'currency', type: 'text', defaultValue: options.defaultCurrency || 'USD' },
+    { name: eventFieldName(options, 'title'), type: 'text', required: true },
+    { name: eventFieldName(options, 'summary'), type: 'textarea' },
+    { name: eventFieldName(options, 'descriptionHTML'), type: 'textarea', admin: { description: 'HTML description sent to Eventbrite.' } },
+    { name: eventFieldName(options, 'startAt'), type: 'date', required: true },
+    { name: eventFieldName(options, 'endAt'), type: 'date', required: true },
+    { name: eventFieldName(options, 'timezone'), type: 'text', defaultValue: options.defaultTimezone || 'America/New_York' },
+    { name: eventFieldName(options, 'onlineEvent'), type: 'checkbox', defaultValue: false },
+    { name: eventFieldName(options, 'listed'), type: 'checkbox', defaultValue: true },
+    { name: eventFieldName(options, 'capacity'), type: 'number', min: 0 },
+    { name: eventFieldName(options, 'currency'), type: 'text', defaultValue: options.defaultCurrency || 'USD' },
     {
-      name: 'venueRecord',
+      name: eventFieldName(options, 'venueRecord'),
       type: 'relationship',
       relationTo: options.venuesSlug || 'eventbrite-venues',
       admin: { description: 'Select a synchronized Eventbrite venue record. The legacy venueId field remains supported.' },
     },
-    { name: 'venueId', type: 'text', admin: { description: 'Legacy/direct Eventbrite venue ID. A selected venue relationship takes precedence.' } },
+    { name: eventFieldName(options, 'venueId'), type: 'text', admin: { description: 'Legacy/direct Eventbrite venue ID. A selected venue relationship takes precedence.' } },
     {
-      name: 'organizerRecord',
+      name: eventFieldName(options, 'organizerRecord'),
       type: 'relationship',
       relationTo: options.organizersSlug || 'eventbrite-organizers',
       admin: { description: 'Select a synchronized Eventbrite organizer. The legacy organizerId field remains supported.' },
     },
-    { name: 'organizerId', type: 'text', admin: { description: 'Legacy/direct Eventbrite organizer ID. A selected organizer relationship takes precedence.' } },
+    { name: eventFieldName(options, 'organizerId'), type: 'text', admin: { description: 'Legacy/direct Eventbrite organizer ID. A selected organizer relationship takes precedence.' } },
     {
-      name: 'basicTicket',
+      name: eventFieldName(options, 'basicTicket'),
       type: 'group',
       admin: { description: 'Optional basic ticket used to make an event publishable without Eventbrite-side ticket setup.' },
       fields: [
@@ -57,6 +70,19 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
     { name: 'eventbriteURL', type: 'text', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
     { name: 'status', type: 'text', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
     { name: 'imageURL', type: 'text', access: serverManaged, admin: { readOnly: true } },
+    ...(options.eventMedia?.collection ? [{
+      name: options.eventMedia.relationshipField || 'eventbriteLogo',
+      label: 'Eventbrite Logo',
+      type: 'relationship' as const,
+      relationTo: options.eventMedia.collection,
+      access: serverManaged,
+      admin: { readOnly: true },
+    }, {
+      name: 'eventbriteLogoMediaId',
+      type: 'text' as const,
+      access: serverManaged,
+      admin: { hidden: true, readOnly: true },
+    }] : []),
     { name: 'eventbriteChangedAt', type: 'date', access: serverManaged, admin: { readOnly: true } },
     { name: 'eventbritePublishedAt', type: 'date', access: serverManaged, admin: { readOnly: true } },
     {
@@ -85,3 +111,54 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
     },
   ],
 })
+
+
+export const augmentEventsCollection = (
+  existing: CollectionConfig,
+  options: EventbritePluginOptions,
+): CollectionConfig => {
+  const generated = buildEventsCollection(options)
+  const existingNames = new Set(
+    (existing.fields || [])
+      .map((field: any) => field?.name)
+      .filter(Boolean),
+  )
+  const generatedAdmin: any = generated.admin || {}
+  const existingAdmin: any = existing.admin || {}
+
+  return {
+    ...generated,
+    ...existing,
+    access: existing.access || generated.access,
+    admin: {
+      ...generatedAdmin,
+      ...existingAdmin,
+      useAsTitle: existingAdmin.useAsTitle || generatedAdmin.useAsTitle,
+      defaultColumns: existingAdmin.defaultColumns || generatedAdmin.defaultColumns,
+      components: {
+        ...(generatedAdmin.components || {}),
+        ...(existingAdmin.components || {}),
+        edit: {
+          ...(generatedAdmin.components?.edit || {}),
+          ...(existingAdmin.components?.edit || {}),
+          beforeDocumentControls: [
+            ...(existingAdmin.components?.edit?.beforeDocumentControls || []),
+            ...(generatedAdmin.components?.edit?.beforeDocumentControls || []),
+          ],
+        },
+      } as any,
+    },
+    fields: [
+      ...(existing.fields || []),
+      ...(generated.fields || []).filter((field: any) => !field?.name || !existingNames.has(field.name)),
+    ],
+    hooks: {
+      ...(generated.hooks || {}),
+      ...(existing.hooks || {}),
+      afterChange: [
+        ...(existing.hooks?.afterChange || []),
+        ...(generated.hooks?.afterChange || []),
+      ],
+    },
+  }
+}

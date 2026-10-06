@@ -19,6 +19,8 @@ test('two-way mode registers inbound and outbound capabilities', () => {
   const config: any = eventbritePlugin({ ...base, syncDirection: 'two-way' })({ collections: [] } as any)
   assert.ok(endpointPaths(config).includes('/eventbrite/webhook'))
   assert.ok(endpointPaths(config).includes('/eventbrite/push/:id'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/sync/:id'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/readiness/:id'))
   assert.ok(endpointPaths(config).includes('/eventbrite/webhooks/:id'))
   assert.ok(endpointPaths(config).includes('/eventbrite/venues/sync'))
   assert.ok(endpointPaths(config).includes('/eventbrite/venues/push/:id'))
@@ -34,6 +36,8 @@ test('inbound-only mode does not expose outbound mutation endpoints', () => {
   const paths = endpointPaths(config)
   assert.ok(paths.includes('/eventbrite/webhook'))
   assert.ok(paths.includes('/eventbrite/sync'))
+  assert.ok(paths.includes('/eventbrite/sync/:id'))
+  assert.ok(!paths.includes('/eventbrite/readiness/:id'))
   assert.ok(paths.includes('/eventbrite/webhooks/:id'))
   assert.ok(paths.includes('/eventbrite/venues/sync'))
   assert.ok(paths.includes('/eventbrite/organizers/sync'))
@@ -50,6 +54,8 @@ test('outbound-only mode does not expose webhook or import endpoints', () => {
   assert.ok(paths.includes('/eventbrite/push/:id'))
   assert.ok(!paths.includes('/eventbrite/webhook'))
   assert.ok(!paths.includes('/eventbrite/sync'))
+  assert.ok(!paths.includes('/eventbrite/sync/:id'))
+  assert.ok(paths.includes('/eventbrite/readiness/:id'))
   assert.ok(!paths.includes('/eventbrite/webhooks/:id'))
   assert.ok(!paths.includes('/eventbrite/venues/sync'))
   assert.ok(!paths.includes('/eventbrite/organizers/sync'))
@@ -244,4 +250,83 @@ test('Core defaults conflict handling to Eventbrite wins for backwards compatibi
   const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
   const syncStatus = events.fields.find((field: any) => field.name === 'syncStatus')
   assert.ok(syncStatus.options.some((option: any) => option.value === 'conflict'))
+})
+
+
+test('event collection registers Payload-native Eventbrite document controls', () => {
+  const config: any = eventbritePlugin({ ...base, syncDirection: 'two-way' })({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const controls = events.admin.components.edit.beforeDocumentControls
+  assert.equal(controls.length, 1)
+  assert.equal(controls[0].path, '@cleverforge/payload-eventbrite/admin')
+  assert.equal(controls[0].exportName, 'EventbriteEventActions')
+  assert.equal(controls[0].clientProps.inboundAllowed, true)
+  assert.equal(controls[0].clientProps.outboundAllowed, true)
+})
+
+
+test('scheduled reconciliation is opt-in and preserves Payload onInit', () => {
+  const existingOnInit = async () => undefined
+  const disabled: any = eventbritePlugin(base)({ collections: [], onInit: existingOnInit } as any)
+  assert.equal(disabled.onInit, existingOnInit)
+
+  const enabled: any = eventbritePlugin({
+    ...base,
+    reconciliation: { enabled: true, intervalMs: 300_000 },
+  })({ collections: [], onInit: existingOnInit } as any)
+  assert.equal(typeof enabled.onInit, 'function')
+  assert.notEqual(enabled.onInit, existingOnInit)
+})
+
+
+test('existing custom event collection is augmented instead of duplicated', () => {
+  const hostEvents: any = {
+    slug: 'events',
+    admin: { useAsTitle: 'name' },
+    access: { read: () => true },
+    fields: [
+      { name: 'name', type: 'text', required: true },
+      { name: 'startsAt', type: 'date', required: true },
+      { name: 'endsAt', type: 'date', required: true },
+    ],
+  }
+
+  const result: any = eventbritePlugin({
+    ...base,
+    eventsSlug: 'events',
+    eventCollection: {
+      useExisting: true,
+      fieldMap: {
+        title: 'name',
+        startAt: 'startsAt',
+        endAt: 'endsAt',
+      },
+    },
+  })({ collections: [hostEvents] } as any)
+
+  const events = result.collections.filter((collection: any) => collection.slug === 'events')
+  assert.equal(events.length, 1)
+  assert.equal(events[0].admin.useAsTitle, 'name')
+  assert.ok(events[0].fields.some((field: any) => field.name === 'eventbriteId'))
+  assert.ok(events[0].fields.some((field: any) => field.name === 'syncStatus'))
+  assert.equal(events[0].fields.filter((field: any) => field.name === 'name').length, 1)
+})
+
+test('existing event collection requires explicit useExisting opt-in', () => {
+  const hostEvents: any = { slug: 'eventbrite-events', fields: [{ name: 'title', type: 'text' }] }
+  assert.throws(
+    () => eventbritePlugin(base)({ collections: [hostEvents] } as any),
+    /eventCollection\.useExisting/,
+  )
+})
+
+test('useExisting fails clearly when the target collection is missing', () => {
+  assert.throws(
+    () => eventbritePlugin({
+      ...base,
+      eventsSlug: 'events',
+      eventCollection: { useExisting: true },
+    })({ collections: [] } as any),
+    /requires an existing collection/,
+  )
 })

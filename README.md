@@ -9,6 +9,7 @@ Standalone open-source Eventbrite integration for Payload CMS. It does **not** d
 - Eventbrite event webhooks
 - Payload -> Eventbrite create/update
 - Eventbrite publish/unpublish
+- Payload Admin event controls for Sync Now, Push, readiness checking, Publish, and Unpublish
 - Basic free or paid ticket-class creation/update
 - Existing Eventbrite organizer assignment
 - Eventbrite venue collection, organization sync, create/update, and event relationship selection
@@ -44,6 +45,25 @@ export default buildConfig({
       syncDirection: 'two-way',
       autoPush: false,
       conflictPolicy: 'eventbrite-wins',
+      eventCollection: {
+        // Optional: set useExisting: true to augment an existing collection with this eventsSlug.
+        useExisting: false,
+        fieldMap: {
+          // title: 'name',
+          // descriptionHTML: 'body',
+          // startAt: 'startsAt',
+          // endAt: 'endsAt',
+        },
+      },
+      eventMedia: {
+        collection: 'media',
+        buildData: ({ event }) => ({ alt: `Event logo for ${event.id}` }),
+      },
+      reconciliation: {
+        enabled: true,
+        intervalMs: 15 * 60 * 1000,
+        runOnStart: false,
+      },
       storeRaw: false,
       requestTimeoutMs: 15000,
       requestRetries: 2,
@@ -66,7 +86,21 @@ Management API routes such as sync, push, publish/unpublish, venue/organizer mut
 
 Core retries only safe GET/HEAD requests after transient network/429/5xx failures. Mutating POST requests are never retried automatically to avoid duplicate Eventbrite writes.
 
+For a long-running Payload server, enable `reconciliation` to periodically import the configured Eventbrite organization's current event state. The interval is clamped to at least one minute and defaults to 15 minutes. On serverless deployments, leave this disabled and invoke `POST /api/eventbrite/sync` from the platform scheduler instead. If you use request-aware token or organization resolvers, scheduled reconciliation requires those resolvers to work without an HTTP request.
+
 When both Payload and Eventbrite changed after the last successful sync, `conflictPolicy` controls the inbound result: `eventbrite-wins` preserves existing behavior, `payload-wins` keeps the local record pending for review, and `newest-wins` compares the Payload `updatedAt` timestamp with Eventbrite's `changed` timestamp.
+
+## Custom Payload event collections
+
+By default, Core registers its own `eventbrite-events` collection. To use a different collection slug, set `eventsSlug`. To reuse a collection already defined by the host application, also set `eventCollection.useExisting: true`.
+
+Use `eventCollection.fieldMap` to map Core's canonical event fields to host field names. For example, `title` can map to `name`, `descriptionHTML` to `body`, and `startAt` / `endAt` to existing date fields. The mapping is bidirectional: Eventbrite imports write to the mapped fields, while Push and auto-push read the same mapped fields back into the canonical Eventbrite model.
+
+When `useExisting` is enabled, Core augments the target collection with only missing Eventbrite integration fields and preserves the collection's existing access rules, hooks, and Admin configuration. Core refuses to silently register a duplicate collection when the target slug already exists.
+
+## Event logo/media mirroring
+
+Set `eventMedia.collection` to an existing Payload upload collection to mirror Eventbrite event logos into Payload. Core validates the image URL against HTTPS and an allowlist (default: `img.evbuc.com`), limits downloads to 10 MiB by default, and stores the Eventbrite media ID on the event so unchanged logos are not re-uploaded. Use `buildData` to provide any required fields on your upload collection, such as `alt`. Core does not automatically delete older uploads when Eventbrite changes a logo.
 
 ## Venues
 
@@ -102,15 +136,19 @@ Eventbrite publication requires a sufficiently complete event. Core supports the
 
 The publish endpoint re-fetches the Eventbrite event and ticket classes before publishing and returns a clear readiness error when description, organizer, or tickets are missing.
 
+On Payload versions that support the document `beforeDocumentControls` slot, the event Edit View also shows **Sync Now**, **Push to Eventbrite**, **Check Readiness**, **Publish**, and **Unpublish** controls. Core API endpoints remain compatible with the package's Payload 3.0 minimum even when that older Admin slot is unavailable.
+
 ## Routes
 
 Assuming Payload's standard `/api` prefix:
 
 - `POST /api/eventbrite/webhook`
 - `POST /api/eventbrite/sync`
+- `POST /api/eventbrite/sync/:id`
 - `POST /api/eventbrite/push/:id`
 - `POST /api/eventbrite/publish/:id`
 - `POST /api/eventbrite/unpublish/:id`
+- `GET /api/eventbrite/readiness/:id`
 - `GET /api/eventbrite/webhooks`
 - `POST /api/eventbrite/webhooks/register`
 - `DELETE /api/eventbrite/webhooks/:id`

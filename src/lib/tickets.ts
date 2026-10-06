@@ -23,13 +23,17 @@ export async function syncBasicTicket(
   return client.createTicketClass(eventId, payload)
 }
 
-export function assertPublishReady(event: Record<string, any>, ticketClasses: unknown[]) {
+export function getPublishReadiness(event: Record<string, any>, ticketClasses: unknown[]) {
   const missing: string[] = []
   if (!event?.description?.html && !event?.description?.text) missing.push('description')
   if (!event?.organizer_id && !event?.organizer?.id) missing.push('organizer')
   if (!Array.isArray(ticketClasses) || ticketClasses.length === 0) missing.push('ticket class')
+  return { ready: missing.length === 0, missing }
+}
 
-  if (missing.length) {
-    throw new Error(`Eventbrite event is not publish-ready. Missing: ${missing.join(', ')}`)
+export function assertPublishReady(event: Record<string, any>, ticketClasses: unknown[]) {
+  const readiness = getPublishReadiness(event, ticketClasses)
+  if (!readiness.ready) {
+    throw new Error(`Eventbrite event is not publish-ready. Missing: ${readiness.missing.join(', ')}`)
   }
 }

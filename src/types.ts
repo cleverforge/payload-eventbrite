@@ -3,6 +3,25 @@ import type { Access, PayloadRequest } from 'payload'
 export type SyncDirection = 'eventbrite-to-payload' | 'payload-to-eventbrite' | 'two-way'
 export type EventbriteConflictPolicy = 'eventbrite-wins' | 'payload-wins' | 'newest-wins'
 
+export type EventbriteEventFieldMap = Partial<Record<
+  | 'title'
+  | 'summary'
+  | 'descriptionHTML'
+  | 'startAt'
+  | 'endAt'
+  | 'timezone'
+  | 'onlineEvent'
+  | 'listed'
+  | 'capacity'
+  | 'currency'
+  | 'venueRecord'
+  | 'venueId'
+  | 'organizerRecord'
+  | 'organizerId'
+  | 'basicTicket',
+  string
+>>
+
 export type EventbriteResolverOperation =
   | 'sync'
   | 'push'
@@ -38,12 +57,43 @@ export interface EventbritePluginOptions {
   ) => Promise<string> | string
   syncDirection?: SyncDirection
   eventsSlug?: string
+  /** Reuse an existing Payload event collection and/or map its content fields to Eventbrite's canonical event model. */
+  eventCollection?: {
+    /** When true, augment the collection identified by eventsSlug instead of registering a new event collection. */
+    useExisting?: boolean
+    /** Map canonical Eventbrite event field names to host collection field names. */
+    fieldMap?: EventbriteEventFieldMap
+  }
   webhookLogSlug?: string
   venuesSlug?: string
   organizersSlug?: string
   defaultCurrency?: string
   defaultTimezone?: string
   autoPush?: boolean
+  /** Optional simple reconciliation loop for long-running Payload servers. Disabled by default. */
+  eventMedia?: {
+    /** Existing Payload upload collection used to mirror Eventbrite event logos. */
+    collection: string
+    /** Relationship field added to the Eventbrite event collection. Defaults to eventbriteLogo. */
+    relationshipField?: string
+    /** Allowed HTTPS hosts for Eventbrite image downloads. Defaults to img.evbuc.com. */
+    allowedHosts?: string[]
+    /** Maximum logo download size in bytes. Defaults to 10 MiB. */
+    maxBytes?: number
+    /** Additional data required by the host upload collection, such as alt text. */
+    buildData?: (args: {
+      event: EventbriteEvent
+      filename: string
+      url: string
+    }) => Promise<Record<string, unknown>> | Record<string, unknown>
+  }
+  reconciliation?: {
+    enabled?: boolean
+    /** Interval between organization syncs. Values below 60000 ms are clamped to one minute. Defaults to 15 minutes. */
+    intervalMs?: number
+    /** Run one reconciliation immediately during Payload initialization. Defaults to false. */
+    runOnStart?: boolean
+  }
   /** Conflict handling when both Payload and Eventbrite changed after the last successful sync. Defaults to eventbrite-wins for backwards compatibility. */
   conflictPolicy?: EventbriteConflictPolicy
   /** Store raw Eventbrite event responses. Defaults to false for data minimization. */
@@ -92,7 +142,7 @@ export interface EventbriteEvent {
   capacity?: number | null
   venue_id?: string | null
   organizer_id?: string | null
-  logo?: { url?: string | null } | null
+  logo?: { id?: string | null; url?: string | null } | null
   created?: string | null
   changed?: string | null
   published?: string | null

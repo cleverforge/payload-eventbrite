@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Add bidirectional field mapping for custom Payload event collections and explicit augmentation of an existing events collection.
+
+- Add optional Eventbrite event-logo mirroring into an existing Payload upload collection with media ID deduplication, HTTPS host validation, and size limits.
+
+- Add opt-in interval-based Core reconciliation for long-running Payload servers, reusing the same organization sync path as the management endpoint.
+
+- Add native Payload event edit controls for Sync Now, Push, readiness checking, Publish, and Unpublish.
+- Add current-event inbound sync and explicit publication-readiness endpoints.
+
 - Add configurable timestamp-based event conflict handling with `eventbrite-wins`, `payload-wins`, and `newest-wins` policies.
 
 - Return controlled 401/400 responses for invalid webhook tokens and malformed payloads before persistence.
