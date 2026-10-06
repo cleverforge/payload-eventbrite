@@ -9,7 +9,6 @@ permissions:
 
 jobs:
   lockfile:
-    if: ${{ hashFiles('package-lock.json') == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -26,5 +25,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "package-lock.json is already current"
+            exit 0
+          fi
           git commit -m "Add npm package lockfile"
           git push origin HEAD:core-lockfile-reproducible-ci
