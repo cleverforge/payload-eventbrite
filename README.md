@@ -9,6 +9,7 @@ Standalone open-source Eventbrite integration for Payload CMS. It does **not** d
 - Eventbrite event webhooks
 - Payload -> Eventbrite create/update
 - Eventbrite publish/unpublish
+- Payload Admin event controls for Sync Now, Push, readiness checking, Publish, and Unpublish
 - Basic free or paid ticket-class creation/update
 - Existing Eventbrite organizer assignment
 - Eventbrite venue collection, organization sync, create/update, and event relationship selection
@@ -108,9 +109,11 @@ Assuming Payload's standard `/api` prefix:
 
 - `POST /api/eventbrite/webhook`
 - `POST /api/eventbrite/sync`
+- `POST /api/eventbrite/sync/:id`
 - `POST /api/eventbrite/push/:id`
 - `POST /api/eventbrite/publish/:id`
 - `POST /api/eventbrite/unpublish/:id`
+- `GET /api/eventbrite/readiness/:id`
 - `GET /api/eventbrite/webhooks`
 - `POST /api/eventbrite/webhooks/register`
 - `DELETE /api/eventbrite/webhooks/:id`
