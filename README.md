@@ -2,6 +2,10 @@
 
 Standalone open-source Eventbrite integration for Payload CMS. It does **not** depend on CleverForms.
 
+## Release status
+
+The documented Core feature scope required before stable v1 is complete. The package remains on the beta release line until the live Eventbrite smoke/write acceptance workflows and the runtime validation in `RELEASE.md` pass. Stable publication is handled by a separate guarded workflow so a prerelease cannot be accidentally published under npm `latest`.
+
 ## Core capabilities
 
 - Eventbrite Events collection in Payload
