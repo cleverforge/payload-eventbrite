@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.0-beta.0 - 2026-10-05
+
 - Add bidirectional field mapping for custom Payload event collections and explicit augmentation of an existing events collection.
 
 - Add optional Eventbrite event-logo mirroring into an existing Payload upload collection with media ID deduplication, HTTPS host validation, and size limits.
