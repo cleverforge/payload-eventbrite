@@ -15,6 +15,7 @@ import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdate
 import { syncBasicTicket } from './lib/tickets.js'
 import { resolveVenueIdForEvent } from './lib/venues.js'
 import { resolveOrganizerIdForEvent } from './lib/organizers.js'
+import { startEventbriteReconciliation } from './lib/reconcile.js'
 
 export * from './types.js'
 export * from './lib/client.js'
@@ -25,6 +26,7 @@ export * from './lib/upsert.js'
 export * from './lib/webhook.js'
 export * from './lib/venues.js'
 export * from './lib/organizers.js'
+export * from './lib/reconcile.js'
 
 export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
   const opts: EventbritePluginOptions = {
@@ -124,8 +126,16 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
       }
     }
 
+    const onInit = inboundAllowed && opts.reconciliation?.enabled
+      ? async (payload: Parameters<NonNullable<Config['onInit']>>[0]) => {
+          if (incomingConfig.onInit) await incomingConfig.onInit(payload)
+          startEventbriteReconciliation(payload, opts)
+        }
+      : incomingConfig.onInit
+
     return {
       ...incomingConfig,
+      ...(onInit ? { onInit } : {}),
       collections: [
         ...(incomingConfig.collections || []),
         events,
