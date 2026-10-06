@@ -15,6 +15,18 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
     defaultColumns: ['title', 'startAt', 'status', 'syncStatus', 'lastSyncedAt'],
     group: 'Eventbrite',
     description: 'Events synchronized between Payload CMS and Eventbrite.',
+    components: {
+      edit: {
+        beforeDocumentControls: [{
+          path: '@cleverforge/payload-eventbrite/admin',
+          exportName: 'EventbriteEventActions',
+          clientProps: {
+            inboundAllowed: options.syncDirection !== 'payload-to-eventbrite',
+            outboundAllowed: options.syncDirection !== 'eventbrite-to-payload',
+          },
+        }],
+      },
+    },
   },
   fields: [
     { name: 'title', type: 'text', required: true },
