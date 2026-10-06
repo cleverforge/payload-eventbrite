@@ -39,12 +39,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
+      - name: Create isolated minimum-version workspace
+        run: |
+          mkdir -p "$RUNNER_TEMP/payload-eventbrite-min"
+          tar \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=dist \
+            --exclude=package-lock.json \
+            -cf - . | tar -xf - -C "$RUNNER_TEMP/payload-eventbrite-min"
       - name: Install minimum supported Payload 3.x
-        run: npm install --no-save payload@3.0.0 @payloadcms/db-sqlite@3.0.0
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
+        run: |
+          cd "$RUNNER_TEMP/payload-eventbrite-min"
+          npm pkg set "devDependencies.payload=3.0.0" "devDependencies.@payloadcms/db-sqlite=3.0.0"
+          npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+      - name: Typecheck minimum supported Payload
+        run: cd "$RUNNER_TEMP/payload-eventbrite-min" && npm run typecheck
+      - name: Test minimum supported Payload
+        run: cd "$RUNNER_TEMP/payload-eventbrite-min" && npm test
+      - name: Build minimum supported Payload
+        run: cd "$RUNNER_TEMP/payload-eventbrite-min" && npm run build
 
   consumer-package:
     name: consumer package (${{ matrix.name }})
