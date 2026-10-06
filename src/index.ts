@@ -37,6 +37,7 @@ export const eventbritePlugin = (options: EventbritePluginOptions): Plugin => {
     defaultCurrency: 'USD',
     defaultTimezone: 'America/New_York',
     autoPush: false,
+    conflictPolicy: 'eventbrite-wins',
     storeRaw: false,
     requestTimeoutMs: 15_000,
     requestRetries: 2,
