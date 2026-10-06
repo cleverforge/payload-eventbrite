@@ -45,6 +45,16 @@ export default buildConfig({
       syncDirection: 'two-way',
       autoPush: false,
       conflictPolicy: 'eventbrite-wins',
+      eventCollection: {
+        // Optional: set useExisting: true to augment an existing collection with this eventsSlug.
+        useExisting: false,
+        fieldMap: {
+          // title: 'name',
+          // descriptionHTML: 'body',
+          // startAt: 'startsAt',
+          // endAt: 'endsAt',
+        },
+      },
       eventMedia: {
         collection: 'media',
         buildData: ({ event }) => ({ alt: `Event logo for ${event.id}` }),
@@ -79,6 +89,14 @@ Core retries only safe GET/HEAD requests after transient network/429/5xx failure
 For a long-running Payload server, enable `reconciliation` to periodically import the configured Eventbrite organization's current event state. The interval is clamped to at least one minute and defaults to 15 minutes. On serverless deployments, leave this disabled and invoke `POST /api/eventbrite/sync` from the platform scheduler instead. If you use request-aware token or organization resolvers, scheduled reconciliation requires those resolvers to work without an HTTP request.
 
 When both Payload and Eventbrite changed after the last successful sync, `conflictPolicy` controls the inbound result: `eventbrite-wins` preserves existing behavior, `payload-wins` keeps the local record pending for review, and `newest-wins` compares the Payload `updatedAt` timestamp with Eventbrite's `changed` timestamp.
+
+## Custom Payload event collections
+
+By default, Core registers its own `eventbrite-events` collection. To use a different collection slug, set `eventsSlug`. To reuse a collection already defined by the host application, also set `eventCollection.useExisting: true`.
+
+Use `eventCollection.fieldMap` to map Core's canonical event fields to host field names. For example, `title` can map to `name`, `descriptionHTML` to `body`, and `startAt` / `endAt` to existing date fields. The mapping is bidirectional: Eventbrite imports write to the mapped fields, while Push and auto-push read the same mapped fields back into the canonical Eventbrite model.
+
+When `useExisting` is enabled, Core augments the target collection with only missing Eventbrite integration fields and preserves the collection's existing access rules, hooks, and Admin configuration. Core refuses to silently register a duplicate collection when the target slug already exists.
 
 ## Event logo/media mirroring
 
