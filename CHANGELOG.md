@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add native Payload event edit controls for Sync Now, Push, readiness checking, Publish, and Unpublish.
+- Add current-event inbound sync and explicit publication-readiness endpoints.
+
 - Add configurable timestamp-based event conflict handling with `eventbrite-wins`, `payload-wins`, and `newest-wins` policies.
 
 - Return controlled 401/400 responses for invalid webhook tokens and malformed payloads before persistence.
