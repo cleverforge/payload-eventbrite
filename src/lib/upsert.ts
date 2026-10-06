@@ -4,6 +4,7 @@ import { normalizeEventbriteEvent } from './normalize.js'
 import { linkVenueRelationship } from './venues.js'
 import { linkOrganizerRelationship } from './organizers.js'
 import { syncEventLogo } from './media.js'
+import { mapEventDataToPayload, mapNormalizedEventToPayload } from './event-mapping.js'
 
 const timestamp = (value: unknown) => {
   const parsed = value ? Date.parse(String(value)) : Number.NaN
@@ -63,15 +64,15 @@ export async function upsertEvent(payload: Payload, event: EventbriteEvent, opti
     linkOrganizerRelationship(payload, normalized.organizerId, options, req),
     syncEventLogo(payload, event, options, current, req),
   ])
-  const data: any = {
-    ...normalized,
+  const data: any = mapEventDataToPayload({
+    ...mapNormalizedEventToPayload(normalized, options),
     ...(venue ? { venueRecord: venue } : {}),
     ...(organizer ? { organizerRecord: organizer } : {}),
     ...logo,
     syncStatus: 'synced',
     lastSyncedAt: new Date().toISOString(),
     lastSyncError: null,
-  }
+  }, options)
 
   const doc = current
     ? await payload.update({ collection: slug as any, id: current.id, data, overrideAccess: true, req, context: { eventbriteInbound: true } })
