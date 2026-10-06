@@ -43,6 +43,7 @@ export default buildConfig({
       defaultCurrency: 'USD',
       syncDirection: 'two-way',
       autoPush: false,
+      conflictPolicy: 'eventbrite-wins',
       storeRaw: false,
       requestTimeoutMs: 15000,
       requestRetries: 2,
@@ -64,6 +65,8 @@ Management API routes such as sync, push, publish/unpublish, venue/organizer mut
 - `two-way` registers both.
 
 Core retries only safe GET/HEAD requests after transient network/429/5xx failures. Mutating POST requests are never retried automatically to avoid duplicate Eventbrite writes.
+
+When both Payload and Eventbrite changed after the last successful sync, `conflictPolicy` controls the inbound result: `eventbrite-wins` preserves existing behavior, `payload-wins` keeps the local record pending for review, and `newest-wins` compares the Payload `updatedAt` timestamp with Eventbrite's `changed` timestamp.
 
 ## Venues
 
