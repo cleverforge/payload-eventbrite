@@ -2,7 +2,7 @@ import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
 import { errorResponse, getClient, getOrganizationId, json, requireManagement } from './helpers.js'
 import { normalizeEventbriteEvent, toEventbriteCreatePayload, toEventbriteUpdatePayload } from '../lib/normalize.js'
-import { assertPublishReady, syncBasicTicket } from '../lib/tickets.js'
+import { assertPublishReady, getPublishReadiness, syncBasicTicket } from '../lib/tickets.js'
 import { resolveVenueIdForEvent } from '../lib/venues.js'
 import { resolveOrganizerIdForEvent } from '../lib/organizers.js'
 
@@ -112,6 +112,43 @@ export const buildUnpublishEndpoint = (options: EventbritePluginOptions): Endpoi
         context: { eventbriteInbound: true },
       })
       return json({ ok: true, result })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+})
+
+
+export const buildReadinessEndpoint = (options: EventbritePluginOptions): Endpoint => ({
+  path: '/eventbrite/readiness/:id',
+  method: 'get',
+  handler: async (req: PayloadRequest) => {
+    try {
+      await requireManagement(options, req)
+      const slug = options.eventsSlug || 'eventbrite-events'
+      const id = req.routeParams?.id as string
+      const doc: any = await req.payload.findByID({ collection: slug as any, id, req })
+      if (!doc.eventbriteId) {
+        return json({
+          ok: true,
+          ready: false,
+          missing: ['Eventbrite event'],
+          message: 'Push the event to Eventbrite before checking publication readiness.',
+        })
+      }
+      const client = await getClient(options, req, { operation: 'publish', document: doc })
+      const [event, ticketPage] = await Promise.all([
+        client.getEvent(doc.eventbriteId),
+        client.listTicketClasses(doc.eventbriteId),
+      ])
+      const readiness = getPublishReadiness(event, ticketPage.ticket_classes || [])
+      return json({
+        ok: true,
+        ...readiness,
+        message: readiness.ready
+          ? 'Event is ready to publish.'
+          : `Event is not publish-ready. Missing: ${readiness.missing.join(', ')}`,
+      })
     } catch (error) {
       return errorResponse(error)
     }
