@@ -103,6 +103,8 @@ Eventbrite publication requires a sufficiently complete event. Core supports the
 
 The publish endpoint re-fetches the Eventbrite event and ticket classes before publishing and returns a clear readiness error when description, organizer, or tickets are missing.
 
+On Payload versions that support the document `beforeDocumentControls` slot, the event Edit View also shows **Sync Now**, **Push to Eventbrite**, **Check Readiness**, **Publish**, and **Unpublish** controls. Core API endpoints remain compatible with the package's Payload 3.0 minimum even when that older Admin slot is unavailable.
+
 ## Routes
 
 Assuming Payload's standard `/api` prefix:
