@@ -28,8 +28,8 @@ Purpose: synchronize and publish event records between Payload CMS and Eventbrit
   - paid ticket
   - basic quantity/capacity
 - [ ] Event logo/media synchronization into Payload uploads
-- [ ] Payload admin actions for Push, Publish, Unpublish, and Sync Now
-- Clear publish-readiness validation
+- [x] Payload admin actions for Push, Publish, Unpublish, and Sync Now
+- [x] Clear publish-readiness validation
 - [ ] Simple scheduled reconciliation
 - [ ] Configurable custom Payload event collection mapping
 - [x] Basic conflict policy using Eventbrite/Payload changed timestamps
