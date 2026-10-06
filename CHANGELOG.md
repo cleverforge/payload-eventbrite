@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add optional Eventbrite event-logo mirroring into an existing Payload upload collection with media ID deduplication, HTTPS host validation, and size limits.
+
 - Add opt-in interval-based Core reconciliation for long-running Payload servers, reusing the same organization sync path as the management endpoint.
 
 - Add native Payload event edit controls for Sync Now, Push, readiness checking, Publish, and Unpublish.
