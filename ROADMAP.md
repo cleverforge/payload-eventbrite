@@ -27,7 +27,7 @@ Purpose: synchronize and publish event records between Payload CMS and Eventbrit
   - free ticket
   - paid ticket
   - basic quantity/capacity
-- [ ] Event logo/media synchronization into Payload uploads
+- [x] Event logo/media synchronization into Payload uploads
 - [x] Payload admin actions for Push, Publish, Unpublish, and Sync Now
 - [x] Clear publish-readiness validation
 - [x] Simple scheduled reconciliation
