@@ -45,6 +45,11 @@ export default buildConfig({
       syncDirection: 'two-way',
       autoPush: false,
       conflictPolicy: 'eventbrite-wins',
+      reconciliation: {
+        enabled: true,
+        intervalMs: 15 * 60 * 1000,
+        runOnStart: false,
+      },
       storeRaw: false,
       requestTimeoutMs: 15000,
       requestRetries: 2,
@@ -66,6 +71,8 @@ Management API routes such as sync, push, publish/unpublish, venue/organizer mut
 - `two-way` registers both.
 
 Core retries only safe GET/HEAD requests after transient network/429/5xx failures. Mutating POST requests are never retried automatically to avoid duplicate Eventbrite writes.
+
+For a long-running Payload server, enable `reconciliation` to periodically import the configured Eventbrite organization's current event state. The interval is clamped to at least one minute and defaults to 15 minutes. On serverless deployments, leave this disabled and invoke `POST /api/eventbrite/sync` from the platform scheduler instead. If you use request-aware token or organization resolvers, scheduled reconciliation requires those resolvers to work without an HTTP request.
 
 When both Payload and Eventbrite changed after the last successful sync, `conflictPolicy` controls the inbound result: `eventbrite-wins` preserves existing behavior, `payload-wins` keeps the local record pending for review, and `newest-wins` compares the Payload `updatedAt` timestamp with Eventbrite's `changed` timestamp.
 
