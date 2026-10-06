@@ -139,3 +139,22 @@ test('deletes an Eventbrite event with one authenticated DELETE request', async 
     globalThis.fetch = originalFetch
   }
 })
+
+
+test('retrieves the fully rendered Eventbrite description endpoint', async () => {
+  const originalFetch = globalThis.fetch
+  let requested = ''
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    requested = String(input)
+    assert.equal(String(init?.method || 'GET').toUpperCase(), 'GET')
+    return Response.json({ description: '<div>Full event description</div>' })
+  }) as typeof fetch
+
+  try {
+    const result = await new EventbriteClient('test-token').getEventDescription('event-123')
+    assert.match(requested, /\/v3\/events\/event-123\/description\//)
+    assert.equal(result.description, '<div>Full event description</div>')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
