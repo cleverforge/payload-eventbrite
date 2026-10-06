@@ -66,6 +66,7 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
         { label: 'Synced', value: 'synced' },
         { label: 'Pending', value: 'pending' },
         { label: 'Error', value: 'error' },
+        { label: 'Conflict / review', value: 'conflict' },
       ],
       access: serverManaged,
       admin: { position: 'sidebar', readOnly: true },

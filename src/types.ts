@@ -1,6 +1,7 @@
 import type { Access, PayloadRequest } from 'payload'
 
 export type SyncDirection = 'eventbrite-to-payload' | 'payload-to-eventbrite' | 'two-way'
+export type EventbriteConflictPolicy = 'eventbrite-wins' | 'payload-wins' | 'newest-wins'
 
 export type EventbriteResolverOperation =
   | 'sync'
@@ -43,6 +44,8 @@ export interface EventbritePluginOptions {
   defaultCurrency?: string
   defaultTimezone?: string
   autoPush?: boolean
+  /** Conflict handling when both Payload and Eventbrite changed after the last successful sync. Defaults to eventbrite-wins for backwards compatibility. */
+  conflictPolicy?: EventbriteConflictPolicy
   /** Store raw Eventbrite event responses. Defaults to false for data minimization. */
   storeRaw?: boolean
   /** Optional shared token added to registered webhook callback URLs and validated on delivery. */

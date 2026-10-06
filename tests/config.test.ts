@@ -237,3 +237,11 @@ test('webhook logs inherit the host management access policy', async () => {
   assert.equal(await webhooks.access.read({ req: { user: { role: 'admin' } } }), true)
   assert.equal(await webhooks.access.delete({ req: { user: { role: 'staff' } } }), false)
 })
+
+
+test('Core defaults conflict handling to Eventbrite wins for backwards compatibility', () => {
+  const config: any = eventbritePlugin(base)({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const syncStatus = events.fields.find((field: any) => field.name === 'syncStatus')
+  assert.ok(syncStatus.options.some((option: any) => option.value === 'conflict'))
+})
