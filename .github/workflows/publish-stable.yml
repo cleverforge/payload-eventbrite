@@ -1,0 +1,55 @@
+name: Publish npm stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type PROMOTE_STABLE_AFTER_LIVE_ACCEPTANCE
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  publish:
+    if: ${{ inputs.confirm == 'PROMOTE_STABLE_AFTER_LIVE_ACCEPTANCE' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run pack:check
+      - name: Verify stable version
+        run: node -e "const v=require('./package.json').version;if(v.includes('-')){console.error('stable publishing requires a non-prerelease package version');process.exit(1)}"
+      - name: Verify live acceptance on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          smoke_count="$(gh run list --workflow live-smoke.yml --commit "$GITHUB_SHA" --status success --json databaseId --jq 'length')"
+          write_count="$(gh run list --workflow live-acceptance.yml --commit "$GITHUB_SHA" --status success --json databaseId --jq 'length')"
+
+          if [ "$smoke_count" -lt 1 ]; then
+            echo "No successful Live Eventbrite smoke test found for $GITHUB_SHA"
+            exit 1
+          fi
+
+          if [ "$write_count" -lt 1 ]; then
+            echo "No successful Live Eventbrite write acceptance found for $GITHUB_SHA"
+            exit 1
+          fi
+      - name: Publish package
+        run: npm publish --access public --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
