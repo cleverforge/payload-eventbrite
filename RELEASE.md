@@ -9,7 +9,7 @@ Do not merge a release or feature pull request unless both CI matrix jobs are gr
 
 Each job must pass:
 
-- install
+- reproducible install from the committed `package-lock.json` using `npm ci`
 - production dependency audit
 - TypeScript typecheck
 - tests
@@ -57,3 +57,8 @@ A stable release additionally requires real runtime validation against:
 ## Branch protection
 
 Configure GitHub branch protection or a repository ruleset for `main` to require the CI checks before merge. Repository policy should prevent merging when either Node matrix job is failing or pending.
+
+
+## Dependency reproducibility
+
+Commit `package-lock.json` and keep it in sync with `package.json`. CI, live acceptance, and publishing use `npm ci` so reviewed builds do not silently resolve a different dependency graph. Dependabot should update both manifest and lockfile together.
