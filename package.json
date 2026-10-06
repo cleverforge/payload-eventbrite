@@ -58,7 +58,7 @@
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "@payloadcms/db-sqlite": "^3.0.0",
-    "eslint": "^9.0.0",
+    "eslint": "^10.12.0",
     "typescript-eslint": "^8.0.0"
   },
   "engines": {
