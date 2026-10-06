@@ -31,7 +31,7 @@ Purpose: synchronize and publish event records between Payload CMS and Eventbrit
 - [x] Payload admin actions for Push, Publish, Unpublish, and Sync Now
 - [x] Clear publish-readiness validation
 - [x] Simple scheduled reconciliation
-- [ ] Configurable custom Payload event collection mapping
+- [x] Configurable custom Payload event collection mapping
 - [x] Basic conflict policy using Eventbrite/Payload changed timestamps
 
 These capabilities remain public because Eventbrite requires core event setup, including an organizer and at least one ticket, before an event can be published.
