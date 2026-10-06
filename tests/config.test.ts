@@ -19,6 +19,8 @@ test('two-way mode registers inbound and outbound capabilities', () => {
   const config: any = eventbritePlugin({ ...base, syncDirection: 'two-way' })({ collections: [] } as any)
   assert.ok(endpointPaths(config).includes('/eventbrite/webhook'))
   assert.ok(endpointPaths(config).includes('/eventbrite/push/:id'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/sync/:id'))
+  assert.ok(endpointPaths(config).includes('/eventbrite/readiness/:id'))
   assert.ok(endpointPaths(config).includes('/eventbrite/webhooks/:id'))
   assert.ok(endpointPaths(config).includes('/eventbrite/venues/sync'))
   assert.ok(endpointPaths(config).includes('/eventbrite/venues/push/:id'))
@@ -244,4 +246,16 @@ test('Core defaults conflict handling to Eventbrite wins for backwards compatibi
   const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
   const syncStatus = events.fields.find((field: any) => field.name === 'syncStatus')
   assert.ok(syncStatus.options.some((option: any) => option.value === 'conflict'))
+})
+
+
+test('event collection registers Payload-native Eventbrite document controls', () => {
+  const config: any = eventbritePlugin({ ...base, syncDirection: 'two-way' })({ collections: [] } as any)
+  const events = config.collections.find((collection: any) => collection.slug === 'eventbrite-events')
+  const controls = events.admin.components.edit.beforeDocumentControls
+  assert.equal(controls.length, 1)
+  assert.equal(controls[0].path, '@cleverforge/payload-eventbrite/admin')
+  assert.equal(controls[0].exportName, 'EventbriteEventActions')
+  assert.equal(controls[0].clientProps.inboundAllowed, true)
+  assert.equal(controls[0].clientProps.outboundAllowed, true)
 })
