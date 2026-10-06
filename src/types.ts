@@ -44,6 +44,14 @@ export interface EventbritePluginOptions {
   defaultCurrency?: string
   defaultTimezone?: string
   autoPush?: boolean
+  /** Optional simple reconciliation loop for long-running Payload servers. Disabled by default. */
+  reconciliation?: {
+    enabled?: boolean
+    /** Interval between organization syncs. Values below 60000 ms are clamped to one minute. Defaults to 15 minutes. */
+    intervalMs?: number
+    /** Run one reconciliation immediately during Payload initialization. Defaults to false. */
+    runOnStart?: boolean
+  }
   /** Conflict handling when both Payload and Eventbrite changed after the last successful sync. Defaults to eventbrite-wins for backwards compatibility. */
   conflictPolicy?: EventbriteConflictPolicy
   /** Store raw Eventbrite event responses. Defaults to false for data minimization. */
