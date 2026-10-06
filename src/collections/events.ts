@@ -69,6 +69,19 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
     { name: 'eventbriteURL', type: 'text', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
     { name: 'status', type: 'text', access: serverManaged, admin: { position: 'sidebar', readOnly: true } },
     { name: 'imageURL', type: 'text', access: serverManaged, admin: { readOnly: true } },
+    ...(options.eventMedia?.collection ? [{
+      name: options.eventMedia.relationshipField || 'eventbriteLogo',
+      label: 'Eventbrite Logo',
+      type: 'relationship' as const,
+      relationTo: options.eventMedia.collection,
+      access: serverManaged,
+      admin: { readOnly: true },
+    }, {
+      name: 'eventbriteLogoMediaId',
+      type: 'text' as const,
+      access: serverManaged,
+      admin: { hidden: true, readOnly: true },
+    }] : []),
     { name: 'eventbriteChangedAt', type: 'date', access: serverManaged, admin: { readOnly: true } },
     { name: 'eventbritePublishedAt', type: 'date', access: serverManaged, admin: { readOnly: true } },
     {
