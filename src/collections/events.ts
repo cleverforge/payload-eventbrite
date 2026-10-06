@@ -26,7 +26,7 @@ export const buildEventsCollection = (options: EventbritePluginOptions): Collect
           },
         }],
       },
-    },
+    } as any,
   },
   fields: [
     { name: 'title', type: 'text', required: true },
