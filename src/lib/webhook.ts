@@ -38,15 +38,45 @@ export function normalizeWebhookActions(actions?: string[]) {
   return normalized
 }
 
-export function assertWebhookPayload(payload: WebhookPayload) {
-  const action = payload?.config?.action
-  if (!action || typeof action !== 'string' || !WEBHOOK_ACTION_PATTERN.test(action)) {
-    throw new Error('Eventbrite webhook payload requires a valid config.action')
-  }
+export function inferWebhookActionFromURL(value: string) {
+  assertEventbriteURL(value)
+  const path = new URL(value).pathname
+
+  if (/^\/v3\/events\/[^/]+\/attendees\/[^/]+\/?$/.test(path)) return 'attendee.updated'
+  if (/^\/v3\/events\/[^/]+\/ticket_classes\/[^/]+\/?$/.test(path)) return 'ticket_class.updated'
+  if (/^\/v3\/orders\/[^/]+\/?$/.test(path)) return 'order.updated'
+  if (/^\/v3\/organizers\/[^/]+\/?$/.test(path)) return 'organizer.updated'
+  if (/^\/v3\/venues\/[^/]+\/?$/.test(path)) return 'venue.updated'
+  if (/^\/v3\/events\/[^/]+\/?$/.test(path)) return 'event.updated'
+
+  throw new Error('Unsupported Eventbrite webhook resource URL')
+}
+
+export function resolveWebhookAction(payload: WebhookPayload) {
   if (payload.api_url != null && typeof payload.api_url !== 'string') {
     throw new Error('Eventbrite webhook api_url must be a string')
   }
-  return action
+
+  const action = payload?.config?.action
+  if (action != null) {
+    if (typeof action !== 'string' || !WEBHOOK_ACTION_PATTERN.test(action)) {
+      throw new Error('Eventbrite webhook payload contains an invalid config.action')
+    }
+    return { action, inferred: false }
+  }
+
+  if (!payload.api_url) {
+    throw new Error('Eventbrite webhook payload requires api_url when config.action is absent')
+  }
+
+  return {
+    action: inferWebhookActionFromURL(payload.api_url),
+    inferred: true,
+  }
+}
+
+export function assertWebhookPayload(payload: WebhookPayload) {
+  return resolveWebhookAction(payload).action
 }
 
 export function assertWebhookResourceURL(action: string, value: string) {
