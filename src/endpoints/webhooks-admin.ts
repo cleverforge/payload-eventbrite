@@ -1,9 +1,7 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions } from '../types.js'
-import { withWebhookToken } from '../lib/webhook.js'
+import { normalizeWebhookActions, withWebhookToken } from '../lib/webhook.js'
 import { errorResponse, getClient, getOrganizationId, json, requireManagement } from './helpers.js'
-
-const DEFAULT_EVENT_ACTIONS = ['event.created', 'event.updated', 'event.published', 'event.unpublished']
 
 export const buildWebhooksListEndpoint = (options: EventbritePluginOptions): Endpoint => ({
   path: '/eventbrite/webhooks',
@@ -39,7 +37,11 @@ export const buildWebhookRegisterEndpoint = (options: EventbritePluginOptions): 
         getClient(options, req, context),
         getOrganizationId(options, req, context),
       ])
-      const webhook = await client.createWebhook(organizationId, endpointURL, body.actions?.length ? body.actions : DEFAULT_EVENT_ACTIONS)
+      const webhook = await client.createWebhook(
+        organizationId,
+        endpointURL,
+        normalizeWebhookActions(body.actions?.length ? body.actions : options.webhookActions),
+      )
       return json({ ok: true, webhook })
     } catch (error) {
       return errorResponse(error)

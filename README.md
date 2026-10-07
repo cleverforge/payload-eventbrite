@@ -186,12 +186,22 @@ All management endpoints require an authenticated Payload user. Webhook logs inh
 
 Eventbrite's webhook documentation recommends a private/unpublished callback URL and does not define a request-signature header. Core supports an optional shared callback token through `webhookToken`. When set, webhook registration automatically adds the token to the callback URL, delivery validates it using a timing-safe comparison, and log sanitization removes it before webhook payloads are stored.
 
-The webhook processor does not trust the posted event data. For event lifecycle notifications it:
+The webhook processor does not trust posted resource data. It validates `config.action`, requires any supplied `api_url` to use Eventbrite's HTTPS API host, and applies action-specific path validation before a resource can be fetched.
 
-1. verifies that `api_url` is HTTPS,
-2. verifies that the host is Eventbrite's API host,
-3. verifies that the resource path is an Eventbrite event resource, and
-4. re-fetches the event using the configured server-side Eventbrite token.
+Core handles these webhook families directly by default:
+
+- `event.created`
+- `event.updated`
+- `event.published`
+- `event.unpublished`
+- `venue.updated`
+- `organizer.updated`
+
+For event lifecycle notifications Core re-fetches the authoritative event with the configured server-side Eventbrite token before updating Payload. Venue and organizer updates are likewise re-fetched and upserted.
+
+Use `webhookActions` to change the default action list registered by Core. Use `onWebhookAction` to extend validated webhook processing without replacing Core's public webhook boundary. The callback receives the sanitized webhook, whether Core already handled it, and a `fetchResource()` helper that re-validates the action/resource URL before making an authenticated Eventbrite API request. This is the extension point used by Pro for order, attendee, and ticket-class events.
+
+Eventbrite's current public API reference documents organization-scoped webhook create/list/delete operations but does not document an HMAC request-signature contract. Core therefore does not trust or implement undocumented `X-Eventbrite-Signature` examples from third-party articles. Use `webhookToken`, HTTPS, server-side Eventbrite re-fetching, and least-privilege management access instead.
 
 ## OAuth
 
