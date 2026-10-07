@@ -6,6 +6,8 @@ export type RenderedDescriptionMode = 'auto' | 'always' | 'never'
 
 export interface EventbriteWebhookActionArgs {
   action: string
+  /** True when config.action was absent and Core inferred the resource family from api_url. */
+  actionInferred: boolean
   webhook: WebhookPayload
   req: PayloadRequest
   handledByCore: boolean
