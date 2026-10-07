@@ -4,6 +4,14 @@ export type SyncDirection = 'eventbrite-to-payload' | 'payload-to-eventbrite' | 
 export type EventbriteConflictPolicy = 'eventbrite-wins' | 'payload-wins' | 'newest-wins'
 export type RenderedDescriptionMode = 'auto' | 'always' | 'never'
 
+export interface EventbriteWebhookActionArgs {
+  action: string
+  webhook: WebhookPayload
+  req: PayloadRequest
+  handledByCore: boolean
+  fetchResource: <T = unknown>(urlOverride?: string) => Promise<T>
+}
+
 export type EventbriteEventFieldMap = Partial<Record<
   | 'title'
   | 'summary'
@@ -101,6 +109,10 @@ export interface EventbritePluginOptions {
   storeRaw?: boolean
   /** Optional shared token added to registered webhook callback URLs and validated on delivery. */
   webhookToken?: string
+  /** Default webhook actions registered when a request does not provide an explicit action list. */
+  webhookActions?: string[]
+  /** Extension hook for validated Eventbrite webhook actions that are not owned by Core (or need additional handling). */
+  onWebhookAction?: (args: EventbriteWebhookActionArgs) => Promise<void> | void
   /** Timeout for Eventbrite API requests in milliseconds. Defaults to 15000. */
   requestTimeoutMs?: number
   /** Retries for safe GET requests after transient failures. Defaults to 2. */
