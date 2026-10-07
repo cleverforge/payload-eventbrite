@@ -45,6 +45,7 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
       collection: logSlug as any,
       data: {
         action,
+        actionInferred,
         apiURL: body.api_url,
         eventbriteWebhookId: body?.config?.webhook_id,
         payload: sanitizedBody,
