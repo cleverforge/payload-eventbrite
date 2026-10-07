@@ -71,9 +71,10 @@ try {
   const push = endpoints.find((endpoint: any) => endpoint.path === '/eventbrite/push/:id')
   const publish = endpoints.find((endpoint: any) => endpoint.path === '/eventbrite/publish/:id')
   const unpublish = endpoints.find((endpoint: any) => endpoint.path === '/eventbrite/unpublish/:id')
+  const webhook = endpoints.find((endpoint: any) => endpoint.path === '/eventbrite/webhook')
 
-  if (!push?.handler || !publish?.handler || !unpublish?.handler) {
-    throw new Error('Expected Core push/publish/unpublish endpoints are not registered')
+  if (!push?.handler || !publish?.handler || !unpublish?.handler || !webhook?.handler) {
+    throw new Error('Expected Core push/publish/unpublish/webhook endpoints are not registered')
   }
 
   const req: any = {
@@ -98,6 +99,34 @@ try {
   if (!remoteEventId) throw new Error('Push succeeded without persisting an Eventbrite event ID')
   if (!pushed.basicTicket?.ticketClassId) throw new Error('Push succeeded without persisting the Eventbrite ticket class ID')
 
+  const webhookReq: any = {
+    payload,
+    headers: new Headers(),
+    url: 'https://example.org/api/eventbrite/webhook',
+    context: {},
+    json: async () => ({
+      api_url: 'https://www.eventbriteapi.com/v3/events/' + remoteEventId + '/',
+      config: {
+        action: 'event.updated',
+        webhook_id: 'live-acceptance',
+        endpoint_url: 'https://example.org/api/eventbrite/webhook',
+      },
+    }),
+  }
+  const webhookResponse: Response = await webhook.handler(webhookReq)
+  const webhookBody: any = await webhookResponse.json()
+  if (!webhookBody.ok) throw new Error('Webhook refetch failed: ' + (webhookBody.error || webhookResponse.status))
+
+  const webhookLogs: any = await payload.find({
+    collection: 'eventbrite-webhooks' as any,
+    where: { action: { equals: 'event.updated' } },
+    overrideAccess: true,
+    limit: 10,
+  })
+  if (!webhookLogs.docs.some((doc: any) => doc.processed === true && doc.error == null)) {
+    throw new Error('Webhook acceptance delivery was not recorded as processed')
+  }
+
   req.url = 'http://localhost/api/eventbrite/publish/' + local.id
   const publishResponse: Response = await publish.handler(req)
   const publishBody: any = await publishResponse.json()
@@ -119,7 +148,7 @@ try {
     ok: true,
     organizationId,
     eventId: deletedEventId,
-    lifecycle: ['create', 'ticket', 'publish', 'unpublish', 'delete'],
+    lifecycle: ['create', 'ticket', 'webhook-refetch', 'publish', 'unpublish', 'delete'],
   }, null, 2))
 } finally {
   if (remoteEventId) {
