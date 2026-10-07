@@ -5,6 +5,7 @@ import {
   assertWebhookResourceURL,
   assertWebhookToken,
   normalizeWebhookActions,
+  resolveWebhookAction,
   sanitizeWebhookPayload,
   withWebhookToken,
 } from '../src/lib/webhook.js'
@@ -175,4 +176,95 @@ test('webhook processing failures are logged but not exposed to the caller', asy
   assert.equal(response.status, 500)
   assert.equal((await response.json() as any).error, 'Eventbrite webhook processing failed')
   assert.equal(updates.at(-1)?.data?.error, 'private downstream failure detail')
+})
+
+
+test('accepts Eventbrite documented webhook payload shape without config.action', () => {
+  const resolved = resolveWebhookAction({
+    api_url: 'https://www.eventbriteapi.com/v3/events/123/',
+    config: {
+      endpoint_url: 'https://example.org/api/eventbrite/webhook',
+    },
+  })
+
+  assert.deepEqual(resolved, { action: 'event.updated', inferred: true })
+})
+
+test('infers validated resource families when Eventbrite omits config.action', () => {
+  assert.deepEqual(
+    resolveWebhookAction({
+      api_url: 'https://www.eventbriteapi.com/v3/orders/o1/',
+      config: { endpoint_url: 'https://example.org/webhook' },
+    }),
+    { action: 'order.updated', inferred: true },
+  )
+  assert.deepEqual(
+    resolveWebhookAction({
+      api_url: 'https://www.eventbriteapi.com/v3/events/e1/attendees/a1/',
+      config: { endpoint_url: 'https://example.org/webhook' },
+    }),
+    { action: 'attendee.updated', inferred: true },
+  )
+  assert.deepEqual(
+    resolveWebhookAction({
+      api_url: 'https://www.eventbriteapi.com/v3/events/e1/ticket_classes/t1/',
+      config: { endpoint_url: 'https://example.org/webhook' },
+    }),
+    { action: 'ticket_class.updated', inferred: true },
+  )
+})
+
+test('webhook endpoint processes documented event callback without config.action', async () => {
+  const originalFetch = globalThis.fetch
+  const updates: any[] = []
+
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(String(input))
+    if (url.pathname === '/v3/events/123/') {
+      return Response.json({
+        id: '123',
+        name: { text: 'Documented Webhook Shape' },
+        start: { utc: '2026-12-01T15:00:00Z', timezone: 'UTC' },
+        end: { utc: '2026-12-01T16:00:00Z', timezone: 'UTC' },
+      })
+    }
+    throw new Error('Unexpected request: ' + url.toString())
+  }) as typeof fetch
+
+  try {
+    const endpoint = buildWebhookEndpoint({
+      accessToken: 'test-token',
+      organizationId: 'org-1',
+      renderedDescriptionMode: 'never',
+    } as any)
+
+    const response: Response = await endpoint.handler({
+      url: 'https://example.org/api/eventbrite/webhook',
+      headers: new Headers(),
+      json: async () => ({
+        api_url: 'https://www.eventbriteapi.com/v3/events/123/',
+        config: {
+          endpoint_url: 'https://example.org/api/eventbrite/webhook',
+        },
+      }),
+      payload: {
+        create: async (args: any) => {
+          if (args.collection === 'eventbrite-webhooks') return { id: 'log-1', ...args.data }
+          return { id: 'event-local-1', ...args.data }
+        },
+        find: async () => ({ docs: [] }),
+        update: async (args: any) => { updates.push(args); return args.data },
+        logger: { error: () => undefined },
+      },
+    } as any)
+
+    assert.equal(response.status, 200)
+    const body: any = await response.json()
+    assert.equal(body.ok, true)
+    assert.equal(body.handledByCore, true)
+    assert.equal(body.actionInferred, true)
+    assert.equal(updates.at(-1)?.data?.processed, true)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })

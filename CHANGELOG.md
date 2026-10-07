@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0-beta.1 - 2026-10-07
+
+- Accept Eventbrite's documented webhook payload shape when `config.action` is omitted and infer a safe generic action from the validated `api_url` resource family.
+- Expose whether a webhook action was inferred so Pro and host extensions can avoid making destructive assumptions.
+- Expire Eventbrite Waypoint tokens after about five minutes instead of retaining them indefinitely.
+- Add regression coverage for action-less webhook deliveries and Waypoint expiration.
+
 ## 0.5.0-beta.0 - 2026-10-07
 
 - Add validated webhook action/resource matching for Eventbrite callback URLs.

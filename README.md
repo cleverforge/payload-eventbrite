@@ -90,7 +90,7 @@ Management API routes such as sync, push, publish/unpublish, venue/organizer mut
 - `payload-to-eventbrite` registers push/publish endpoints only.
 - `two-way` registers both.
 
-Core retries only safe GET/HEAD requests after transient network/429/5xx failures. Mutating POST requests are never retried automatically to avoid duplicate Eventbrite writes.
+Core retries only safe GET/HEAD requests after transient network/429/5xx failures. Mutating POST requests are never retried automatically to avoid duplicate Eventbrite writes. Eventbrite Waypoint tokens are propagated for immediate consistency after writes and discarded after about five minutes, matching Eventbrite's guidance.
 
 For a long-running Payload server, enable `reconciliation` to periodically import the configured Eventbrite organization's current event state. The interval is clamped to at least one minute and defaults to 15 minutes. On serverless deployments, leave this disabled and invoke `POST /api/eventbrite/sync` from the platform scheduler instead. If you use request-aware token or organization resolvers, scheduled reconciliation requires those resolvers to work without an HTTP request.
 
@@ -186,7 +186,7 @@ All management endpoints require an authenticated Payload user. Webhook logs inh
 
 Eventbrite's webhook documentation recommends a private/unpublished callback URL and does not define a request-signature header. Core supports an optional shared callback token through `webhookToken`. When set, webhook registration automatically adds the token to the callback URL, delivery validates it using a timing-safe comparison, and log sanitization removes it before webhook payloads are stored.
 
-The webhook processor does not trust posted resource data. It validates `config.action`, requires any supplied `api_url` to use Eventbrite's HTTPS API host, and applies action-specific path validation before a resource can be fetched.
+The webhook processor does not trust posted resource data. When Eventbrite supplies `config.action`, Core validates it. Eventbrite's documented callback example does not guarantee that field, so when it is absent Core infers a non-destructive generic action from the validated `api_url` resource family. Any supplied `api_url` must use Eventbrite's HTTPS API host and pass resource-family path validation before it can be fetched. Extensions receive `actionInferred: true` when Core had to infer the action so they can avoid destructive assumptions such as treating an inferred ticket-class update as a deletion.
 
 Core handles these webhook families directly by default:
 

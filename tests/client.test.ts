@@ -158,3 +158,48 @@ test('retrieves the fully rendered Eventbrite description endpoint', async () =>
     globalThis.fetch = originalFetch
   }
 })
+
+
+test('uses recent Eventbrite Waypoint tokens and discards them after five minutes', async () => {
+  const originalFetch = globalThis.fetch
+  const originalNow = Date.now
+  let now = 1_000_000
+  let call = 0
+
+  Date.now = () => now
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    call++
+    const headers = new Headers(init?.headers)
+
+    if (call === 1) {
+      assert.equal(headers.get('Eventbrite-API-Waypoint-Token'), null)
+      return new Response(JSON.stringify({ id: 'event-1' }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Eventbrite-API-Waypoint-Token': 'waypoint-1',
+        },
+      })
+    }
+
+    if (call === 2) {
+      assert.equal(headers.get('Eventbrite-API-Waypoint-Token'), 'waypoint-1')
+      return Response.json({ id: 'event-1' })
+    }
+
+    assert.equal(headers.get('Eventbrite-API-Waypoint-Token'), null)
+    return Response.json({ id: 'event-1' })
+  }) as typeof fetch
+
+  try {
+    const client = new EventbriteClient('test-token')
+    await client.createEvent('org-1', { event: { name: { html: 'Waypoint Test' } } })
+    await client.getEvent('event-1')
+    now += 5 * 60 * 1_000 + 1
+    await client.getEvent('event-1')
+    assert.equal(call, 3)
+  } finally {
+    Date.now = originalNow
+    globalThis.fetch = originalFetch
+  }
+})

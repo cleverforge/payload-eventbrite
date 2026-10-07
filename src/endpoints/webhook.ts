@@ -1,6 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 import type { EventbritePluginOptions, WebhookPayload } from '../types.js'
-import { assertWebhookPayload, assertWebhookResourceURL, assertWebhookToken, sanitizeWebhookPayload } from '../lib/webhook.js'
+import { assertWebhookResourceURL, assertWebhookToken, resolveWebhookAction, sanitizeWebhookPayload } from '../lib/webhook.js'
 import { fetchRenderedDescription } from '../lib/description.js'
 import { getClient, json } from './helpers.js'
 import { upsertEvent } from '../lib/upsert.js'
@@ -29,8 +29,11 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
     }
 
     let action: string
+    let actionInferred = false
     try {
-      action = assertWebhookPayload(body)
+      const resolved = resolveWebhookAction(body)
+      action = resolved.action
+      actionInferred = resolved.inferred
       if (body.api_url) assertWebhookResourceURL(action, body.api_url)
     } catch {
       return json({ ok: false, error: 'Invalid Eventbrite webhook payload' }, 400)
@@ -42,6 +45,7 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
       collection: logSlug as any,
       data: {
         action,
+        actionInferred,
         apiURL: body.api_url,
         eventbriteWebhookId: body?.config?.webhook_id,
         payload: sanitizedBody,
@@ -86,6 +90,7 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
 
       await options.onWebhookAction?.({
         action,
+        actionInferred,
         webhook: sanitizedBody,
         req,
         handledByCore,
@@ -99,7 +104,7 @@ export const buildWebhookEndpoint = (options: EventbritePluginOptions): Endpoint
         overrideAccess: true,
         req,
       })
-      return json({ ok: true, handledByCore })
+      return json({ ok: true, handledByCore, actionInferred })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       await req.payload.update({
