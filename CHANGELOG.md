@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Add validated webhook action/resource matching for Eventbrite callback URLs.
+- Add Core real-time venue and organizer webhook synchronization.
+- Add configurable default webhook action registration.
+- Add a safe `onWebhookAction` extension hook for Pro and future connectors.
+- Return a generic HTTP 500 on downstream webhook processing failures while retaining internal error detail in protected logs.
+- Reject undocumented webhook-signature assumptions; continue using the documented Eventbrite API re-fetch model plus optional shared callback token.
+
+## Unreleased
+
 - Add current Eventbrite rendered-description hydration so New Create events retain their full listing HTML without treating the deprecated summary mirror as editable description content.
 - Keep rendered listing HTML server-managed and preserve local editable description content during outbound synchronization.
 
