@@ -2,6 +2,7 @@ import type { EventbriteEvent, EventbriteOrganizer, EventbriteTicketClass, Event
 
 const API_BASE = 'https://www.eventbriteapi.com/v3'
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504])
+const WAYPOINT_MAX_AGE_MS = 5 * 60 * 1_000
 
 export interface EventbriteClientOptions {
   timeoutMs?: number
@@ -10,6 +11,7 @@ export interface EventbriteClientOptions {
 
 export class EventbriteClient {
   private waypoint?: string
+  private waypointReceivedAt?: number
   private readonly timeoutMs: number
   private readonly retries: number
 
@@ -61,7 +63,14 @@ export class EventbriteClient {
     headers.set('Authorization', `Bearer ${this.token}`)
     headers.set('Accept', 'application/json')
     if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
-    if (this.waypoint) headers.set('Eventbrite-API-Waypoint-Token', this.waypoint)
+    if (this.waypoint && this.waypointReceivedAt != null) {
+      if (Date.now() - this.waypointReceivedAt < WAYPOINT_MAX_AGE_MS) {
+        headers.set('Eventbrite-API-Waypoint-Token', this.waypoint)
+      } else {
+        this.waypoint = undefined
+        this.waypointReceivedAt = undefined
+      }
+    }
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(new Error('Eventbrite API request timed out')), this.timeoutMs)
@@ -75,7 +84,10 @@ export class EventbriteClient {
     try {
       const response = await fetch(url, { ...init, headers, signal: controller.signal })
       const newWaypoint = response.headers.get('Eventbrite-API-Waypoint-Token')
-      if (newWaypoint) this.waypoint = newWaypoint
+      if (newWaypoint) {
+        this.waypoint = newWaypoint
+        this.waypointReceivedAt = Date.now()
+      }
       return response
     } finally {
       clearTimeout(timer)
