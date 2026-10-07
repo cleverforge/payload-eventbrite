@@ -14,6 +14,7 @@ export const buildWebhookLogCollection = (options: EventbritePluginOptions): Col
   },
   fields: [
     { name: 'action', type: 'text' },
+    { name: 'actionInferred', type: 'checkbox', defaultValue: false },
     { name: 'apiURL', type: 'text' },
     { name: 'eventbriteWebhookId', type: 'text' },
     { name: 'processed', type: 'checkbox', defaultValue: false },
